@@ -2,6 +2,8 @@ import typer
 from typing import Annotated
 import torch
 import warnings
+
+from int_4 import int4_quant
 warnings.filterwarnings("ignore")
 from transformers import AutoTokenizer, AutoModelForCausalLM, logging,BitsAndBytesConfig
 from transformers.utils.logging import disable_progress_bar
@@ -98,6 +100,8 @@ def inference(model: Annotated[str, typer.Option(help="Model name")],prompt: Ann
     
     res_int8 = int8_quant(model,prompt,token)
     table.add_row("INT8", f"{res_int8['mem']:.2f}", f"{res_int8['tps']:.4f}", f"{res_int8['ttft']:.4f} sec", f"{res_int8['perplexity']:.2f}")
+    res_int4 = int4_quant(model,prompt,token)
+    table.add_row("INT4", f"{res_int4['mem']:.2f}", f"{res_int4['tps']:.4f}", f"{res_int4['ttft']:.4f} sec", f"{res_int4['perplexity']:.2f}")
     console.print(table)
 
 if __name__ == "__main__":

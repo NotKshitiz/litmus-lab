@@ -5,13 +5,13 @@ from datasets import load_dataset
 import os 
 import psutil
 import gc
-def int8_quant(model:str,prompt:str,token:str):
+def int4_quant(model:str,prompt:str,token:str):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     token_id = token
     bnb_config = BitsAndBytesConfig(
-        load_in_8bit=True
+        load_in_4bit=True
     )
-    model_int8 = AutoModelForCausalLM.from_pretrained(model,quantization_config=bnb_config,
+    model_int4 = AutoModelForCausalLM.from_pretrained(model,quantization_config=bnb_config,
     device_map="auto",token=token_id
     )
     input_text = prompt
@@ -21,18 +21,18 @@ def int8_quant(model:str,prompt:str,token:str):
     inputs = {k: v.to(device) for k, v in inputs.items()}
     
     with torch.no_grad():
-        _ = model_int8(**inputs)
+        _ = model_int4(**inputs)
     torch.cuda.synchronize()
     start = time.time()
     with torch.no_grad():
-        outputs = model_int8(**inputs)
+        outputs = model_int4(**inputs)
     torch.cuda.synchronize()
     end = time.time()
     ttft = end - start
     torch.cuda.synchronize()
     start_TPS = time.time()
     with torch.no_grad():
-        gen_outputs = model_int8.generate(**inputs, max_new_tokens=50,min_new_tokens=50,do_sample=True,repetition_penalty=1.2,use_cache=True)
+        gen_outputs = model_int4.generate(**inputs, max_new_tokens=50,min_new_tokens=50,do_sample=True,repetition_penalty=1.2,use_cache=True)
     torch.cuda.synchronize()
     end_TPS = time.time()
     total_gen_time = end_TPS - start_TPS
@@ -55,26 +55,26 @@ def int8_quant(model:str,prompt:str,token:str):
     test_data.cleanup_cache_files()
     del test_data
     gc.collect()
-    max_model_limit = getattr(model_int8.config, "max_position_embeddings", 2048)
+    max_model_limit = getattr(model_int4.config, "max_position_embeddings", 2048)
     max_safe_len = min(max_model_limit, 2048) if "opt" in model.lower() else max_model_limit
     ref_inputs = tokenizer(
         full_text_sample, return_tensors="pt", max_length=max_safe_len, truncation=True
     )
-    cuda_tokens_int8 = ref_inputs["input_ids"].to(device)
+    cuda_tokens_int4 = ref_inputs["input_ids"].to(device)
     with torch.no_grad():
-        outputs_int8 = model_int8(
-            cuda_tokens_int8, labels=cuda_tokens_int8
+        outputs_int4 = model_int4(
+            cuda_tokens_int4, labels=cuda_tokens_int4
         )
-        perplexity_int8 = torch.exp(outputs_int8.loss).item()
-    del outputs_int8
+        perplexity_int4 = torch.exp(outputs_int4.loss).item()
+    del outputs_int4
     del ref_inputs
-    del cuda_tokens_int8
+    del cuda_tokens_int4
     del tokenizer
     del full_text_sample
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
     gc.collect()
-    del model_int8
+    del model_int4
     del gen_outputs
     gc.collect()
     torch.cuda.empty_cache()
@@ -82,6 +82,6 @@ def int8_quant(model:str,prompt:str,token:str):
         "ttft":ttft,
         "mem":mem_mb,
         "tps":tps,
-        "perplexity":perplexity_int8
+        "perplexity":perplexity_int4
     }
     
