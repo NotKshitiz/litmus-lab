@@ -1,4 +1,5 @@
 import time
+from xml.parsers.expat import model
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from datasets import load_dataset
@@ -15,11 +16,11 @@ def int8_quant(model:str,prompt:str,token:str):
     device_map="auto",token=token_id
     )
     input_text = prompt
-
+    tokenizer = AutoTokenizer.from_pretrained(model, token=token_id)
     inputs = tokenizer(input_text,return_tensors="pt")
     prompt_len = inputs.input_ids.shape[1]
     inputs = {k: v.to(device) for k, v in inputs.items()}
-    tokenizer = AutoTokenizer.from_pretrained(model, token=token_id)
+    
     with torch.no_grad():
         _ = model_int8(**inputs)
     torch.cuda.synchronize()
@@ -55,8 +56,10 @@ def int8_quant(model:str,prompt:str,token:str):
     test_data.cleanup_cache_files()
     del test_data
     gc.collect()
+    max_model_limit = getattr(model_int8.config, "max_position_embeddings", 2048)
+    max_safe_len = min(max_model_limit, 2048) if "opt" in model.lower() else max_model_limit
     ref_inputs = tokenizer(
-        full_text_sample, return_tensors="pt", max_length=3000, truncation=True
+        full_text_sample, return_tensors="pt", max_length=max_safe_len, truncation=True
     )
     cuda_tokens_int8 = ref_inputs["input_ids"].to(device)
     with torch.no_grad():

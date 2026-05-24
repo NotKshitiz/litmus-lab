@@ -72,8 +72,10 @@ def inference(model: Annotated[str, typer.Option(help="Model name")],prompt: Ann
     del test_data
     import gc 
     gc.collect()
+    max_model_limit = getattr(model_native.config, "max_position_embeddings", 2048)
+    max_safe_len = min(max_model_limit, 2048) if "opt" in model.lower() else max_model_limit
     ref_inputs = tokenizer(
-        full_text_sample, return_tensors="pt", max_length=3000, truncation=True
+        full_text_sample, return_tensors="pt", max_length=max_safe_len, truncation=True
     )
     cuda_tokens_native = ref_inputs["input_ids"].to(device)
     with torch.no_grad():
