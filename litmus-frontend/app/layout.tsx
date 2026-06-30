@@ -16,9 +16,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "litmus-lab — Quantize with conviction",
+  title: "litmus-lab — Run your model. Know what to ship.",
   description:
-    "A blazing-fast, zero-dependency local CLI profiler that benchmarks LLMs across FP16, INT8 and INT4 on your own GPU — then tells you exactly which precision to deploy.",
+    "Benchmark HF and vLLM across FP16, INT8 and INT4 on your own GPU. One command. One verdict — which backend, which precision, what it costs at scale.",
   keywords: [
     "LLM quantization",
     "INT4",

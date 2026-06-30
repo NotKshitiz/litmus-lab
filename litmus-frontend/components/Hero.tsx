@@ -7,101 +7,112 @@ import CopyCommand from "./CopyCommand";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+const stats = [
+  { value: "4", label: "precision modes" },
+  { value: "2", label: "backends" },
+  { value: "1", label: "verdict" },
+  { value: "0", label: "config needed" },
+];
+
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, -56]);
-  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 9]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
-  const glowOpacity = useTransform(scrollYProgress, [0, 1], [0.6, 0.15]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, -40]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.96]);
+  const glowOpacity = useTransform(scrollYProgress, [0, 1], [0.7, 0.1]);
 
   return (
-    <section ref={ref} id="top" className="relative overflow-hidden px-5 pt-32 sm:px-8 sm:pt-40">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 pb-24 lg:grid-cols-2 lg:gap-10">
-        {/* left — copy */}
-        <div className="text-center lg:text-left">
-          <motion.a
-            href="#waitlist"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease }}
-            className="glass-soft inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs text-bone-muted transition-colors hover:text-bone"
-          >
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-coral" />
-            CLI is free &amp; live · join waitlist for the platform
-            <span className="text-bone-faint">→</span>
-          </motion.a>
+    <section ref={ref} id="top" className="relative overflow-hidden px-5 pt-28 sm:pt-36">
+      <div className="mx-auto max-w-5xl text-center">
 
-          <motion.h1
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.05, ease }}
-            className="mt-7 text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.03em]"
-          >
-            Quantize with
-            <br />
-            <span className="text-coral-gradient">conviction.</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.12, ease }}
-            className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-bone-muted lg:mx-0"
-          >
-            <span className="font-mono text-bone">litmus-lab</span> benchmarks your model across HF
-            (FP16 · INT8 · INT4) and vLLM on your own GPU — then tells you exactly which backend and
-            precision to ship, and what it costs at scale.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.18, ease }}
-            className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start"
-          >
-            <a
-              href="#waitlist"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-coral px-7 py-3.5 font-medium text-white shadow-[0_12px_40px_-16px_rgba(217,100,95,0.55)] transition-all duration-200 hover:bg-coral-deep hover:shadow-[0_16px_46px_-14px_rgba(217,100,95,0.75)]"
-            >
-              Join the waitlist
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </a>
-            <a
-              href="#how"
-              className="glass-soft inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-medium text-bone transition-colors duration-200 hover:border-coral/40 hover:text-coral"
-            >
-              See it run
-            </a>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.4 }}
-            className="mt-7 flex justify-center lg:justify-start"
-          >
-            <CopyCommand />
-          </motion.div>
-        </div>
-
-        {/* right — product window */}
-        <motion.div
-          initial={{ opacity: 0, y: 30, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.95, delay: 0.2, ease }}
-          className="relative [perspective:1200px]"
+        {/* badge */}
+        <motion.a
+          href="https://github.com/NotKshitiz/litmus-lab"
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease }}
+          className="glass-soft inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs text-bone-muted transition-colors hover:text-bone"
         >
-          <motion.div style={{ y, rotateX, scale }} className="relative [transform-style:preserve-3d]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-coral" />
+          Open source · free forever
+          <span className="ml-1 font-mono text-bone-faint">↗</span>
+        </motion.a>
+
+        {/* headline */}
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.06, ease }}
+          className="mt-8 text-[clamp(2.8rem,7vw,5.5rem)] font-semibold leading-[0.97] tracking-[-0.04em]"
+        >
+          Run your model.
+          <br />
+          <span className="text-coral-gradient">Know what to ship.</span>
+        </motion.h1>
+
+        {/* subheadline */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.75, delay: 0.14, ease }}
+          className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-bone-muted sm:text-xl"
+        >
+          Benchmark HF and vLLM across FP16 · INT8 · INT4 on your own GPU.
+          Get one verdict — which backend, which precision, what it costs.
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2, ease }}
+          className="mt-9 flex flex-wrap items-center justify-center gap-3"
+        >
+          <a
+            href="#waitlist"
+            className="inline-flex items-center gap-2 rounded-full bg-coral px-8 py-3.5 text-sm font-semibold text-white shadow-[0_12px_40px_-16px_rgba(217,100,95,0.6)] transition-all duration-200 hover:bg-coral-deep hover:shadow-[0_16px_46px_-14px_rgba(217,100,95,0.8)]"
+          >
+            Join the waitlist
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
+          <CopyCommand />
+        </motion.div>
+
+        {/* live stats */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.35 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
+        >
+          {stats.map((s, i) => (
+            <div key={i} className="flex items-baseline gap-1.5">
+              <span className="font-mono text-2xl font-semibold tracking-tight text-bone">{s.value}</span>
+              <span className="text-sm text-bone-faint">{s.label}</span>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* terminal */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 1, delay: 0.28, ease }}
+          className="relative mt-16 [perspective:1400px]"
+        >
+          <motion.div style={{ y, scale }} className="relative [transform-style:preserve-3d]">
             <motion.div
               style={{ opacity: glowOpacity }}
-              className="absolute -inset-6 -z-10 rounded-[40px] bg-coral/20 blur-[80px]"
+              className="absolute -inset-8 -z-10 rounded-[48px] bg-coral/15 blur-[90px]"
             />
             <AnimatedTerminal />
           </motion.div>
         </motion.div>
+
       </div>
     </section>
   );

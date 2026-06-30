@@ -3,18 +3,43 @@
 import { motion } from "framer-motion";
 import Reveal from "./Reveal";
 
-const steps = [
-  { n: "01", title: "Install", body: "One pip command. Zero config, no API keys, nothing leaves your machine.", code: "pip install litmus-lab" },
-  { n: "02", title: "Profile", body: "Point it at any Hugging Face causal LM and a prompt. Pass --backend all to run HF (FP16/INT8/INT4) and vLLM side by side in isolated passes.", code: 'litmus-lab --model Qwen/Qwen2.5-7B \\\n  --prompt "Explain transformers" \\\n  --backend all' },
-  { n: "03", title: "Deploy with a verdict", body: "Read the table and get a single recommendation — which backend, which precision, and whether vLLM's throughput gain justifies the VRAM cost.", code: "→ Recommendation: Deploy vLLM · FP16\n  3.4× faster · PPL delta 0.01" },
+const phases = [
+  {
+    n: "01",
+    total: "03",
+    tag: "Install",
+    headline: "One command.\nNothing leaves your machine.",
+    body: "pip install litmus-lab. No signup, no API key, no telemetry you didn't opt into. It runs entirely on your GPU.",
+    code: "pip install 'litmus-lab[all]'",
+    output: null,
+  },
+  {
+    n: "02",
+    total: "03",
+    tag: "Profile",
+    headline: "HF and vLLM.\nSide by side. One shot.",
+    body: "Pass --backend all and litmus-lab runs HF (FP16, INT8, INT4) and vLLM in isolated passes — measuring VRAM, throughput, latency and perplexity for each.",
+    code: 'litmus-lab --model Qwen/Qwen2.5-7B \\\n  --prompt "Explain transformers" \\\n  --backend all',
+    output: null,
+  },
+  {
+    n: "03",
+    total: "03",
+    tag: "Deploy",
+    headline: "One verdict.\nNo more guessing.",
+    body: "A deterministic engine weighs your measured numbers and outputs a single recommendation — which backend, which precision, and why.",
+    code: null,
+    output: "  Mode          VRAM      TPS     PPL\n  HF · FP16    7297 MB   32.7    5.64\n  HF · INT4    2334 MB   26.0    7.34\n  vLLM · FP16 12687 MB  111.7    5.65\n\n  → Deploy vLLM · FP16\n    3.4× faster · PPL delta 0.01",
+  },
 ];
 
 export default function HowItWorks() {
   return (
     <section id="how" className="relative py-28">
-      <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+
         <Reveal>
-          <p className="text-sm font-medium text-coral">Three steps</p>
+          <p className="text-sm font-medium text-coral">How it works</p>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.02em] sm:text-5xl">
@@ -22,28 +47,62 @@ export default function HowItWorks() {
           </h2>
         </Reveal>
 
-        <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-3">
-          {steps.map((s, i) => (
+        <div className="mt-20 flex flex-col gap-0">
+          {phases.map((p, i) => (
             <motion.div
-              key={s.n}
-              initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.55, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
-              className="glass flex flex-col rounded-3xl p-8"
+              key={p.n}
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="group relative grid grid-cols-1 gap-8 border-t border-white/[0.06] py-14 lg:grid-cols-[280px_1fr]"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-coral/10 font-mono text-sm font-semibold text-coral">
-                {s.n}
-              </span>
-              <h3 className="mt-6 text-2xl font-semibold tracking-tight">{s.title}</h3>
-              <p className="mt-3 flex-1 leading-relaxed text-bone-muted">{s.body}</p>
-              <pre className="mt-6 overflow-x-auto rounded-xl border border-white/10 bg-black/40 p-4 font-mono text-xs leading-relaxed text-coral-bright">
-                <span className="select-none text-bone-faint">$ </span>
-                {s.code}
-              </pre>
+              {/* left — phase number */}
+              <div className="flex items-start gap-5 lg:flex-col lg:gap-0">
+                <div className="flex items-baseline gap-1 font-mono">
+                  <span className="text-[3.5rem] font-semibold leading-none tracking-tighter text-bone/10 transition-colors duration-300 group-hover:text-bone/20">
+                    {p.n}
+                  </span>
+                  <span className="text-lg text-bone/10">/{p.total}</span>
+                </div>
+                <div className="mt-auto lg:mt-6">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-coral/20 bg-coral/[0.07] px-3 py-1 font-mono text-xs text-coral">
+                    <span className="h-1 w-1 rounded-full bg-coral" />
+                    {p.tag}
+                  </span>
+                </div>
+              </div>
+
+              {/* right — content */}
+              <div>
+                <h3 className="text-2xl font-semibold leading-tight tracking-[-0.02em] sm:text-3xl" style={{ whiteSpace: "pre-line" }}>
+                  {p.headline}
+                </h3>
+                <p className="mt-4 max-w-xl text-base leading-relaxed text-bone-muted">
+                  {p.body}
+                </p>
+
+                {p.code && (
+                  <pre className="mt-7 overflow-x-auto rounded-2xl border border-white/[0.07] bg-black/50 p-5 font-mono text-sm leading-relaxed">
+                    <span className="select-none text-bone-faint">$ </span>
+                    <span className="text-coral-bright">{p.code}</span>
+                  </pre>
+                )}
+
+                {p.output && (
+                  <pre className="mt-7 overflow-x-auto rounded-2xl border border-white/[0.07] bg-black/50 p-5 font-mono text-sm leading-relaxed text-bone-muted">
+                    {p.output.split("\n").map((line, j) => (
+                      <div key={j} className={line.startsWith("  →") ? "mt-3 font-semibold text-coral-bright" : ""}>
+                        {line}
+                      </div>
+                    ))}
+                  </pre>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
+
       </div>
     </section>
   );
