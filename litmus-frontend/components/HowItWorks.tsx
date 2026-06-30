@@ -5,8 +5,8 @@ import Reveal from "./Reveal";
 
 const steps = [
   { n: "01", title: "Install", body: "One pip command. Zero config, no API keys, nothing leaves your machine.", code: "pip install litmus-lab" },
-  { n: "02", title: "Profile", body: "Point it at any Hugging Face causal LM and a prompt. It runs FP16, INT8 and INT4 in isolated passes.", code: 'litmus-lab --model Qwen/Qwen2.5-7B \\\n  --prompt "Explain transformers"' },
-  { n: "03", title: "Deploy with a verdict", body: "Read the table, get a deterministic recommendation, and ship the precision that's actually best for your GPU.", code: "→ Recommendation: Deploy INT4 (NF4)" },
+  { n: "02", title: "Profile", body: "Point it at any Hugging Face causal LM and a prompt. Pass --backend all to run HF (FP16/INT8/INT4) and vLLM side by side in isolated passes.", code: 'litmus-lab --model Qwen/Qwen2.5-7B \\\n  --prompt "Explain transformers" \\\n  --backend all' },
+  { n: "03", title: "Deploy with a verdict", body: "Read the table and get a single recommendation — which backend, which precision, and whether vLLM's throughput gain justifies the VRAM cost.", code: "→ Recommendation: Deploy vLLM · FP16\n  3.4× faster · PPL delta 0.01" },
 ];
 
 export default function HowItWorks() {

@@ -10,7 +10,7 @@ const stages = [
     status: "Available now",
     live: true,
     title: "The CLI",
-    desc: "Profile any model across FP16 · INT8 · INT4 on your own GPU and get a deterministic deployment verdict.",
+    desc: "Profile any model across HF (FP16 · INT8 · INT4) and vLLM on your own GPU — one command, one verdict, AI-powered or fully offline.",
   },
   {
     n: "02",

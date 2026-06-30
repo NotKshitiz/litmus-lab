@@ -49,9 +49,9 @@ export default function Hero() {
             transition={{ duration: 0.75, delay: 0.12, ease }}
             className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-bone-muted lg:mx-0"
           >
-            <span className="font-mono text-bone">litmus-lab</span> benchmarks your model across FP16,
-            INT8 and INT4 on your own GPU — then a deterministic offline engine tells you exactly which
-            precision to ship.
+            <span className="font-mono text-bone">litmus-lab</span> benchmarks your model across HF
+            (FP16 · INT8 · INT4) and vLLM on your own GPU — then tells you exactly which backend and
+            precision to ship, and what it costs at scale.
           </motion.p>
 
           <motion.div

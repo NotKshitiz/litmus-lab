@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 
 const COMMAND =
-  'litmus-lab --model microsoft/Phi-3-mini-4k-instruct --prompt "Write a short poem"';
+  'litmus-lab --model microsoft/Phi-3-mini-4k-instruct --prompt "Explain gravity" --backend all';
 
 type Row = {
   name: string;
@@ -16,9 +16,10 @@ type Row = {
 };
 
 const ROWS: Row[] = [
-  { name: "Native", vram: "7540.12", tps: "54.22", ttft: "0.0120s", ppl: "12.42", best: "tps" },
-  { name: "INT8", vram: "4210.45", tps: "18.94", ttft: "0.0540s", ppl: "12.45" },
-  { name: "INT4", vram: "2840.88", tps: "22.11", ttft: "0.0610s", ppl: "12.68", best: "vram" },
+  { name: "HF · FP16",  vram: "7297.83",  tps: "32.69",  ttft: "0.0300s", ppl: "5.64" },
+  { name: "HF · INT8",  vram: "3846.47",  tps: "14.26",  ttft: "0.0828s", ppl: "5.81" },
+  { name: "HF · INT4",  vram: "2334.96",  tps: "25.98",  ttft: "0.0686s", ppl: "7.34", best: "vram" },
+  { name: "vLLM · FP16", vram: "12687.31", tps: "111.68", ttft: "0.4477s", ppl: "5.65", best: "tps" },
 ];
 
 export default function AnimatedTerminal() {
@@ -30,7 +31,7 @@ export default function AnimatedTerminal() {
   useEffect(() => {
     if (!inView) return;
     if (typed < COMMAND.length) {
-      const t = setTimeout(() => setTyped((n) => n + 1), 22);
+      const t = setTimeout(() => setTyped((n) => n + 1), 18);
       return () => clearTimeout(t);
     }
     setPhase("running");
@@ -49,10 +50,10 @@ export default function AnimatedTerminal() {
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
         <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
         <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-        <span className="ml-3 font-mono text-xs text-bone-faint">litmus-lab — profiling session</span>
+        <span className="ml-3 font-mono text-xs text-bone-faint">litmus-lab — benchmark session</span>
       </div>
 
-      <div className="min-h-[340px] p-5 font-mono text-[13px] leading-relaxed sm:text-sm">
+      <div className="min-h-[380px] p-5 font-mono text-[13px] leading-relaxed sm:text-sm">
         <div className="flex flex-wrap items-center gap-x-2">
           <span className="text-coral">❯</span>
           <span className="break-all text-bone">
@@ -72,17 +73,17 @@ export default function AnimatedTerminal() {
               className="mt-4 space-y-1 text-bone-muted"
             >
               <p>↳ loading model on <span className="text-coral">cuda</span> …</p>
-              <p>↳ warmup · measuring FP16 / INT8 / INT4 <span className="animate-blink">▍</span></p>
+              <p>↳ benchmarking HF · FP16 / INT8 / INT4 · vLLM <span className="animate-blink">▍</span></p>
             </motion.div>
           )}
         </AnimatePresence>
 
         {(phase === "table" || phase === "verdict") && (
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[460px] border-collapse text-left">
+            <table className="w-full min-w-[500px] border-collapse text-left">
               <thead>
                 <tr className="text-bone-faint">
-                  <th className="border-b border-white/10 pb-2 pr-4 font-normal">Quant</th>
+                  <th className="border-b border-white/10 pb-2 pr-4 font-normal">Mode</th>
                   <th className="border-b border-white/10 pb-2 pr-4 font-normal">VRAM (MB)</th>
                   <th className="border-b border-white/10 pb-2 pr-4 font-normal">TPS</th>
                   <th className="border-b border-white/10 pb-2 pr-4 font-normal">TTFT</th>
@@ -101,11 +102,11 @@ export default function AnimatedTerminal() {
                     <td className="border-b border-white/5 py-2 pr-4 font-medium text-coral">{r.name}</td>
                     <td className="border-b border-white/5 py-2 pr-4">
                       {r.vram}
-                      {r.best === "vram" && <Tag>−62% VRAM</Tag>}
+                      {r.best === "vram" && <Tag>−68% VRAM</Tag>}
                     </td>
                     <td className="border-b border-white/5 py-2 pr-4">
                       {r.tps}
-                      {r.best === "tps" && <Tag>fastest</Tag>}
+                      {r.best === "tps" && <Tag>3.4× faster</Tag>}
                     </td>
                     <td className="border-b border-white/5 py-2 pr-4">{r.ttft}</td>
                     <td className="border-b border-white/5 py-2">{r.ppl}</td>
@@ -124,11 +125,11 @@ export default function AnimatedTerminal() {
               transition={{ duration: 0.5 }}
               className="mt-5 rounded-xl border border-coral/30 bg-coral/[0.08] p-4"
             >
-              <p className="text-xs uppercase tracking-[0.2em] text-coral">System verdict</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-coral">Recommendation</p>
               <p className="mt-2 text-bone">
-                Deploy <span className="font-semibold text-coral-bright">INT4 (NF4)</span> — reclaims{" "}
-                <span className="text-bone">4699 MB</span> of VRAM with a tightly controlled{" "}
-                <span className="text-bone">+0.26 PPL</span> delta.
+                Deploy <span className="font-semibold text-coral-bright">vLLM · FP16</span> — 3.4× faster than HF at identical quality{" "}
+                <span className="text-bone-muted">(PPL delta 0.01)</span>. For memory-constrained setups,{" "}
+                <span className="font-semibold text-coral-bright">HF · INT4</span> saves 4963 MB with acceptable quality loss.
               </p>
             </motion.div>
           )}

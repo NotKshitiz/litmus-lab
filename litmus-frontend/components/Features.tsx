@@ -13,21 +13,21 @@ function Icon({ d }: { d: ReactNode }) {
 }
 
 const flagship = {
-  title: "Multi-precision benchmarking",
-  body: "Profile Native FP16, INT8 and INT4 (NF4) on the exact same prompt and architecture — measured side by side on your GPU, never estimated.",
+  title: "Multi-backend benchmarking",
+  body: "Profile HuggingFace (FP16 · INT8 · INT4) and vLLM on the exact same prompt — measured side by side on your GPU, never estimated. Use --backend hf, vllm, or all.",
   icon: <Icon d={<path d="M4 19V9M10 19V5M16 19v-7M22 19H2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />} />,
 };
 
 const bars = [
-  { label: "FP16", mb: "7540 MB", w: "100%" },
-  { label: "INT8", mb: "4210 MB", w: "56%" },
-  { label: "INT4", mb: "2841 MB", w: "38%" },
+  { label: "HF FP16",  val: "32.7 TPS",  w: "29%" },
+  { label: "HF INT4",  val: "26.0 TPS",  w: "23%" },
+  { label: "vLLM FP16", val: "111.7 TPS", w: "100%", highlight: true },
 ];
 
 const features = [
   {
-    title: "Offline recommendation engine",
-    body: "A deterministic, rule-based heuristic weighs VRAM, speed and perplexity to output a single deployment verdict. No APIs. No hallucinations.",
+    title: "AI-powered recommendations",
+    body: "Set GROQ_API_KEY and get a Llama-3.3-70B verdict that reads your full results table. No key? The offline heuristic runs deterministically with no internet required.",
     icon: (
       <Icon
         d={
@@ -41,7 +41,7 @@ const features = [
   },
   {
     title: "VRAM isolation & cleanup",
-    body: "Every pass runs in an isolated worker with aggressive CUDA cache flushing, GC and IPC clearing — so memory leaks never fake your VRAM readings.",
+    body: "Every pass runs in an isolated worker with aggressive CUDA cache flushing, GC and IPC clearing — so memory leaks never corrupt your VRAM readings.",
     icon: (
       <Icon
         d={
@@ -54,14 +54,13 @@ const features = [
     ),
   },
   {
-    title: "Context-length protection",
-    body: "Reads max_position_embeddings and scales test sequences safely — so fragile older architectures never crash on out-of-bound indices.",
+    title: "Cost prediction",
+    body: "Point at your target concurrency and GPU hourly rate — litmus-lab projects token cost per request so you know before you deploy, not after your bill arrives.",
     icon: (
       <Icon
         d={
           <>
-            <path d="M12 3a9 9 0 1 0 9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M12 7v5l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </>
         }
       />
@@ -100,7 +99,7 @@ export default function Features() {
         </Reveal>
 
         <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* flagship — full width with inline VRAM comparison */}
+          {/* flagship — full width with TPS comparison */}
           <motion.div
             initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
             whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -116,21 +115,23 @@ export default function Features() {
                 <p className="mt-3 max-w-md leading-relaxed text-bone-muted">{flagship.body}</p>
               </div>
               <div className="space-y-3">
+                <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-bone-faint">Throughput comparison</p>
                 {bars.map((b) => (
                   <div key={b.label} className="flex items-center gap-3 font-mono text-xs">
-                    <span className="w-10 shrink-0 text-bone-faint">{b.label}</span>
+                    <span className={`w-20 shrink-0 ${b.highlight ? "text-coral" : "text-bone-faint"}`}>{b.label}</span>
                     <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/5">
                       <motion.div
                         initial={{ width: 0 }}
                         whileInView={{ width: b.w }}
                         viewport={{ once: true }}
                         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                        className="h-full rounded-full bg-gradient-to-r from-coral-deep to-coral"
+                        className={`h-full rounded-full ${b.highlight ? "bg-gradient-to-r from-coral-deep to-coral" : "bg-white/20"}`}
                       />
                     </div>
-                    <span className="w-16 shrink-0 text-right text-bone">{b.mb}</span>
+                    <span className={`w-20 shrink-0 text-right ${b.highlight ? "font-semibold text-coral" : "text-bone"}`}>{b.val}</span>
                   </div>
                 ))}
+                <p className="pt-1 font-mono text-[10px] text-coral/60">↑ vLLM PagedAttention · 3.4× over HF FP16</p>
               </div>
             </div>
           </motion.div>
