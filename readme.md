@@ -132,36 +132,18 @@ Gated models (Llama, Gemma) require `--token`.
 
 ### vLLM backend (FP16)
 
-Same model coverage as HF. vLLM runs FP16 only using PagedAttention + FlashAttention-2 — no on-the-fly quantization. VRAM usage is higher than HF FP16 because vLLM pre-allocates the KV cache pool on startup.
+Same model coverage as HF. vLLM runs FP16 only — VRAM usage will be higher than HF FP16 but throughput is significantly better.
 
 ---
 
 ## What is NOT supported
 
-| Limitation | Reason |
-|------------|--------|
-| Encoder-only models (BERT, RoBERTa) | Use `AutoModelForMaskedLM`, not causal LM |
-| Encoder-decoder models (T5, BART, mT5) | Use `AutoModelForSeq2SeqLM`, not causal LM |
-| AWQ / GPTQ via vLLM | Requires a pre-quantized checkpoint (e.g. `TheBloke/Mistral-7B-AWQ`), not a base model repo |
-| Models larger than GPU VRAM at FP16 | Will OOM on the HF FP16 pass — use a smaller model or `--backend vllm` only |
-| vLLM on Windows | vLLM requires Linux or WSL2 |
-| Multi-GPU inference | Single GPU only — tensor parallel not supported |
-
-> **Large-context models:** Qwen2.5 and similar models with 128K+ context windows are capped at 512 tokens for perplexity computation to prevent OOM. TPS and TTFT measurements are not affected.
-
----
-
-## How it works
-
-Each format is benchmarked sequentially. The model is fully loaded, measured, then completely removed from GPU memory before the next format loads — no VRAM bleed between passes.
-
-**HF backend** uses [bitsandbytes](https://github.com/TimDettmers/bitsandbytes):
-- INT8 — `BitsAndBytesConfig(load_in_8bit=True)`
-- INT4 — `BitsAndBytesConfig(load_in_4bit=True)` with NF4 (NormalFloat4)
-
-**vLLM backend** uses PagedAttention + FlashAttention-2 for high-throughput FP16 inference. VRAM is measured as the delta between free GPU memory before and after model initialization, capturing both model weights and the pre-allocated KV cache pool.
-
-**Perplexity** is computed on a 512-token slice of WikiText-2 using cross-entropy loss.
+- BERT, RoBERTa, and other masked language models
+- T5, BART, mT5, and other sequence-to-sequence models
+- AWQ / GPTQ quantization on the vLLM backend
+- Models that exceed your GPU VRAM at FP16
+- vLLM on Windows (use Linux or WSL2)
+- Multi-GPU / tensor parallel setups
 
 ---
 
