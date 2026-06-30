@@ -13,4 +13,9 @@ env/
 Thumbs.db
 
 
+
 .env
+
+dist/
+build/
+*.egg-info/

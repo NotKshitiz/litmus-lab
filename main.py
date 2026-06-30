@@ -1,25 +1,17 @@
-import typer
-from typing import Annotated
-import torch
+import os
 import warnings
-import os 
-import time
-import gc
-import psutil
-import datasets
+from typing import Annotated
 
-from int_4 import int4_quant
-from int_8 import int8_quant
-from transformers import AutoTokenizer, AutoModelForCausalLM, logging
-from transformers.utils.logging import disable_progress_bar
-from datasets import load_dataset
+import datasets
+import torch
+import typer
 from rich.console import Console
 from rich.table import Table
+from transformers import logging
+from transformers.utils.logging import disable_progress_bar
 
-# Initialize Rich Console
-console = Console()
+from backends.hf import hf_bench
 
-# Suppress annoying logging clutter
 warnings.filterwarnings("ignore")
 datasets.logging.set_verbosity_error()
 datasets.disable_progress_bars()
@@ -32,158 +24,230 @@ logging.set_verbosity_error()
 disable_progress_bar()
 
 app = typer.Typer()
+console = Console()
 
-def generate_heuristic_recommendation(native, int8, int4, model_name):
-    """
-    Analyzes model metrics locally using deterministic rule thresholds.
-    Requires no internet, no keys, and won't hallucinate.
-    """
-    analysis = f"\n[bold underline cyan]SYSTEM EVALUATION REPORT FOR {model_name}:[/bold underline cyan]\n"
-    
-    # Calculate key differences
-    vram_saved_int8 = native['mem'] - int8['mem']
-    vram_saved_int4 = native['mem'] - int4['mem']
-    
-    speed_drop_int8_pct = ((native['tps'] - int8['tps']) / native['tps']) * 100
-    speed_drop_int4_pct = ((native['tps'] - int4['tps']) / native['tps']) * 100
-    
-    ppl_growth_int8 = int8['perplexity'] - native['perplexity']
-    ppl_growth_int4 = int4['perplexity'] - native['perplexity']
-    
-    # Case 1: Model is trivial in size (e.g., OPT-125m) - Don't quantize
-    if native['mem'] < 1000:
-        return analysis + (
-            f"• [green]Recommendation: Deploy NATIVE (FP16).[/green]\n"
-            f"• Reason: The baseline VRAM footprint is exceptionally small ({native['mem']:.1f} MB). "
-            f"Quantization degrades token processing speed (TPS) by "
-            f"{speed_drop_int4_pct:.1f}% without giving you any meaningful structural memory gains."
-        )
 
-    # Case 2: Extreme 4-bit quantization breakdown (Scrambled weights check)
-    if ppl_growth_int4 > 2.0:
-        return analysis + (
-            f"• [yellow]Recommendation: Deploy INT8 Quantization.[/yellow]\n"
-            f"• Reason: Moving to INT4 causes a severe degradation in accuracy performance metrics "
-            f"(Perplexity jumped by +{ppl_growth_int4:.2f}). INT8 balances safety and footprint limits, "
-            f"saving you {vram_saved_int8:.2f} MB of VRAM while keeping language generation completely stable (+{ppl_growth_int8:.2f} PPL)."
+def get_ai_recommendation(results: dict, model_name: str, api_key: str) -> str | None:
+    try:
+        from groq import Groq
+    except ImportError:
+        console.print(
+            "[yellow]groq package not installed — falling back to offline recommendation. "
+            "Install with: pip install litmus-lab[ai][/yellow]"
         )
-        
-    # Case 3: If INT4 speeds are actually better or neck-and-neck with INT8 while saving more memory
-    if int4['tps'] >= int8['tps'] or (speed_drop_int4_pct - speed_drop_int8_pct) < 15:
-        return analysis + (
-            f"• [green]Recommendation: Deploy INT4 (NF4 format).[/green]\n"
-            f"• Reason: Reclaims a significant [bold]{vram_saved_int4:.2f} MB[/bold] of critical GPU VRAM overhead "
-            f"compared to Native FP16 execution. The language model perplexity delta holds together tightly (+{ppl_growth_int4:.2f} PPL) "
-            f"making it the most hardware-efficient choice for this architecture size."
-        )
+        return None
 
-    # Case 4: Default Fallback - INT8 is faster but heavier than INT4
-    return analysis + (
-        f"• [yellow]Recommendation: Conditional Deployment (INT8 for Speed / INT4 for VRAM).[/yellow]\n"
-        f"• Reason: INT4 saves the most memory ({vram_saved_int4:.2f} MB), but hits a heavy speed tax "
-        f"running at {int4['tps']:.1f} TPS ({speed_drop_int4_pct:.1f}% drop). Choose INT8 if low-latency user response "
-        f"is critical, or INT4 if you are running tight on hardware memory boundaries."
-    )
+    lines = [
+        "You are an LLM deployment advisor. Analyze these benchmark results and give a concise deployment recommendation.",
+        "",
+        f"Model: {model_name}",
+        "",
+        "Benchmark Results:",
+    ]
+    for key, label in [
+        ("hf_fp16",   "HF FP16      "),
+        ("hf_int8",   "HF INT8      "),
+        ("hf_int4",   "HF INT4 (NF4)"),
+        ("vllm_fp16", "vLLM FP16    "),
+    ]:
+        if key in results:
+            m = results[key]
+            lines.append(
+                f"  {label}: VRAM={m['mem']:.0f}MB  TPS={m['tps']:.2f}  "
+                f"TTFT={m['ttft']:.4f}s  Perplexity={m['perplexity']:.2f}"
+            )
+    lines += [
+        "",
+        "Metrics:",
+        "  VRAM (MB)   — GPU memory usage. Lower is more hardware-efficient.",
+        "  TPS         — Tokens per second. Higher is faster throughput.",
+        "  TTFT        — Time to first token. Lower is less latency.",
+        "  Perplexity  — Language quality. Lower is better; delta >2.0 from FP16 indicates degradation.",
+        "",
+        "Give a 3-4 sentence deployment recommendation covering: best precision/backend choice, "
+        "key trade-offs, and when to choose each option.",
+    ]
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": "\n".join(lines)}],
+            max_tokens=400,
+            temperature=0.3,
+        )
+        text = response.choices[0].message.content.strip()
+        return (
+            f"\n[bold underline green]AI RECOMMENDATION "
+            f"(Groq · llama-3.3-70b-versatile)[/bold underline green]\n{text}"
+        )
+    except Exception as e:
+        console.print(
+            f"[yellow]Groq API failed ({type(e).__name__}) — falling back to offline recommendation.[/yellow]"
+        )
+        return None
+
+
+def generate_offline_recommendation(results: dict, model_name: str) -> str:
+    header = f"\n[bold underline cyan]RECOMMENDATION — {model_name}[/bold underline cyan]\n"
+
+    native = results.get("hf_fp16")
+    int8   = results.get("hf_int8")
+    int4   = results.get("hf_int4")
+    vllm   = results.get("vllm_fp16")
+
+    has_hf = native and int8 and int4
+
+    # ── pick best HF quantization ──────────────────────────────────
+    hf_pick = hf_reason = None
+    if has_hf:
+        vram_saved_int8    = native["mem"] - int8["mem"]
+        vram_saved_int4    = native["mem"] - int4["mem"]
+        speed_drop_int4_pct = ((native["tps"] - int4["tps"]) / native["tps"]) * 100
+        speed_drop_int8_pct = ((native["tps"] - int8["tps"]) / native["tps"]) * 100
+        ppl_growth_int8    = int8["perplexity"] - native["perplexity"]
+        ppl_growth_int4    = int4["perplexity"] - native["perplexity"]
+
+        if native["mem"] < 1000:
+            hf_pick   = "FP16"
+            hf_reason = f"baseline VRAM is tiny ({native['mem']:.0f} MB), quantization has no benefit"
+        elif ppl_growth_int4 > 2.0:
+            hf_pick   = "INT8"
+            hf_reason = (
+                f"INT4 degrades quality too much (+{ppl_growth_int4:.2f} PPL); "
+                f"INT8 saves {vram_saved_int8:.0f} MB with stable quality (+{ppl_growth_int8:.2f} PPL)"
+            )
+        elif int4["tps"] >= int8["tps"] or (speed_drop_int4_pct - speed_drop_int8_pct) < 15:
+            hf_pick   = "INT4 (NF4)"
+            hf_reason = f"saves {vram_saved_int4:.0f} MB vs FP16, perplexity stays tight (+{ppl_growth_int4:.2f} PPL)"
+        else:
+            hf_pick   = "INT8"
+            hf_reason = f"INT4 costs {speed_drop_int4_pct:.1f}% TPS for only {vram_saved_int4:.0f} MB extra savings"
+
+    # ── factor in vLLM if available ────────────────────────────────
+    if vllm and native:
+        tps_delta_pct  = ((vllm["tps"] - native["tps"]) / native["tps"]) * 100
+        vram_delta     = vllm["mem"] - native["mem"]
+        ppl_delta      = abs(vllm["perplexity"] - native["perplexity"])
+        vram_direction = "more" if vram_delta > 0 else "less"
+
+        if tps_delta_pct >= 30:
+            verdict = "[green]Deploy vLLM FP16 for production serving.[/green]"
+            reason  = (
+                f"vLLM is {tps_delta_pct:.1f}% faster than HF FP16 with negligible quality difference "
+                f"(PPL delta {ppl_delta:.2f}), using {abs(vram_delta):.0f} MB {vram_direction} VRAM for its KV cache pool."
+            )
+            if hf_pick:
+                reason += (
+                    f" For memory-constrained or single-user setups, "
+                    f"HF {hf_pick} is the best fallback ({hf_reason})."
+                )
+        else:
+            if hf_pick:
+                verdict = f"[green]Deploy HF {hf_pick}.[/green]"
+                reason  = (
+                    f"vLLM offers only {tps_delta_pct:.1f}% throughput gain — not worth the extra VRAM overhead. "
+                    f"Among HF options, {hf_pick} is optimal: {hf_reason}."
+                )
+            else:
+                verdict = "[yellow]Deploy HF FP16.[/yellow]"
+                reason  = f"vLLM offers only {tps_delta_pct:.1f}% throughput gain, not worth the overhead."
+    elif has_hf:
+        color   = "green" if hf_pick in ("FP16", "INT4 (NF4)") else "yellow"
+        verdict = f"[{color}]Deploy HF {hf_pick}.[/{color}]"
+        reason  = hf_reason.capitalize() + "."
+    else:
+        return header + "• [yellow]Not enough data for a recommendation.[/yellow]"
+
+    return header + f"• {verdict}\n• {reason}"
+
 
 @app.command()
 def inference(
-    model: Annotated[str, typer.Option(help="Model name")],
-    prompt: Annotated[str, typer.Option(help="Input prompt: e.g. 'What is the capital of France?'")],
-    token: Annotated[str, typer.Option(help="Hugging face token")] = None
+    model: Annotated[str, typer.Option(help="HuggingFace model repo")],
+    prompt: Annotated[str, typer.Option(help="Input prompt")],
+    token: Annotated[str, typer.Option(help="HuggingFace token for gated models")] = None,
+    backend: Annotated[str, typer.Option(help="Backend to benchmark: hf | vllm | all")] = "hf",
 ):
-    token_id = token
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Running inference with model: {model} on device: {device}")
-    
-    tokenizer = AutoTokenizer.from_pretrained(model, token=token_id)
-    model_native = AutoModelForCausalLM.from_pretrained(model, device_map="auto", token=token_id)
-    input_text = prompt
+    if backend not in ("hf", "vllm", "all"):
+        console.print("[red]--backend must be one of: hf, vllm, all[/red]")
+        raise typer.Exit(1)
 
-    inputs = tokenizer(input_text, return_tensors="pt")
-    prompt_len = inputs.input_ids.shape[1]
-    inputs = {k: v.to(device) for k, v in inputs.items()}
-    
-    print("Running Warmup..")
-    with torch.no_grad():
-        _ = model_native(**inputs)
-    torch.cuda.synchronize()
-    
-    start = time.time()
-    with torch.no_grad():
-        outputs = model_native(**inputs)
-    torch.cuda.synchronize()
-    end = time.time()
-    ttft = end - start
-    
-    start_TPS = time.time()
-    with torch.no_grad():
-        gen_outputs = model_native.generate(**inputs, max_new_tokens=50, min_new_tokens=50, do_sample=False, repetition_penalty=1.2, use_cache=True)
-    torch.cuda.synchronize()
-    end_TPS = time.time()
-    total_gen_time = end_TPS - start_TPS
-    total_tokens = gen_outputs[0].shape[0]
-    actual_new_tokens = total_tokens - prompt_len
-    tps = actual_new_tokens / total_gen_time
-    
-    if torch.cuda.is_available():
-        mem_mb = torch.cuda.memory_allocated() / (1024**2)
-        mem_label = "VRAM (MB)"
-    else:
-        process = psutil.Process(os.getpid())
-        mem_mb = process.memory_info().rss / (1024**2)
-        mem_label = "RAM (MB)"
-        
-    test_data = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="test")
-    full_text_sample = "\n\n".join([line.strip() for line in test_data["text"] if line.strip()])
-    test_data.cleanup_cache_files()
-    del test_data
-    gc.collect()
-    
-    max_model_limit = getattr(model_native.config, "max_position_embeddings", 2048)
-    max_safe_len = min(max_model_limit, 2048) if "opt" in model.lower() else max_model_limit
-    
-    ref_inputs = tokenizer(full_text_sample, return_tensors="pt", max_length=max_safe_len, truncation=True)
-    cuda_tokens_native = ref_inputs["input_ids"].to(device)
-    
-    with torch.no_grad():
-        outputs_native = model_native(cuda_tokens_native, labels=cuda_tokens_native)
-        perplexity_native = torch.exp(outputs_native.loss).item()
-        
-    # Store metrics for analyzer tracking
-    native_metrics = {"mem": mem_mb, "tps": tps, "ttft": ttft, "perplexity": perplexity_native}
-    
-    table = Table("Quantization", f"{mem_label}", "Tokens/sec(TPS)", "Time to first token(TTFT)", "Perplexity")
-    table.add_row("Native", f"{native_metrics['mem']:.2f}", f"{native_metrics['tps']:.4f}", f"{native_metrics['ttft']:.4f} sec", f"{native_metrics['perplexity']:.2f}")
-    
-    # Drop native allocations completely out of VRAM scope
-    del model_native
-    del outputs_native
-    del ref_inputs
-    del cuda_tokens_native
-    del tokenizer
-    del full_text_sample
-    del gen_outputs
-    torch.cuda.empty_cache()
-    torch.cuda.ipc_collect()
-    gc.collect()
-    
-    # Run the isolated INT8 track module
-    res_int8 = int8_quant(model, prompt, token)
-    table.add_row("INT8", f"{res_int8['mem']:.2f}", f"{res_int8['tps']:.4f}", f"{res_int8['ttft']:.4f} sec", f"{res_int8['perplexity']:.2f}")
-    
-    # Run the isolated INT4 track module
-    res_int4 = int4_quant(model, prompt, token)
-    table.add_row("INT4", f"{res_int4['mem']:.2f}", f"{res_int4['tps']:.4f}", f"{res_int4['ttft']:.4f} sec", f"{res_int4['perplexity']:.2f}")
-    
-    # Print clean dashboard performance table
+    run_hf = backend in ("hf", "all")
+    run_vllm = backend in ("vllm", "all")
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    mem_label = "VRAM (MB)" if torch.cuda.is_available() else "RAM (MB)"
+    console.print(f"[bold]Model:[/bold] {model}  |  [bold]Device:[/bold] {device}  |  [bold]Backend:[/bold] {backend}\n")
+
+    results = {}
+
+    if run_hf:
+        for key, quantization, label in [
+            ("hf_fp16", None,   "HF · FP16      "),
+            ("hf_int8", "int8", "HF · INT8      "),
+            ("hf_int4", "int4", "HF · INT4 (NF4)"),
+        ]:
+            console.print(f"[cyan]Benchmarking {label.strip()}...[/cyan]")
+            results[key] = hf_bench(model, prompt, token, quantization=quantization)
+
+    if run_vllm:
+        console.print("[magenta]Benchmarking vLLM · FP16...[/magenta]")
+        try:
+            from backends.vllm import vllm_bench
+            results["vllm_fp16"] = vllm_bench(model, prompt, token, quantization=None)
+        except ImportError:
+            console.print(
+                "[red]vLLM is not installed — skipping. "
+                "Install with: pip install litmus-lab\\[vllm][/red]\n"
+                "[dim]Note: vLLM requires Linux or WSL2.[/dim]"
+            )
+            if not run_hf:
+                raise typer.Exit(1)
+
+    # ── Results table ──────────────────────────────────────────────
+    table = Table("Mode", mem_label, "Tokens/sec (TPS)", "Time to First Token (TTFT)", "Perplexity")
+
+    for key, label in [
+        ("hf_fp16",   "HF · FP16      "),
+        ("hf_int8",   "HF · INT8      "),
+        ("hf_int4",   "HF · INT4 (NF4)"),
+        ("vllm_fp16", "vLLM · FP16    "),
+    ]:
+        if key not in results:
+            continue
+        m = results[key]
+        table.add_row(
+            label,
+            f"{m['mem']:.2f}",
+            f"{m['tps']:.4f}",
+            f"{m['ttft']:.4f} sec",
+            f"{m['perplexity']:.2f}",
+        )
+
     console.print(table)
-    
-    # Generate local report
-    report = generate_heuristic_recommendation(native_metrics, res_int8, res_int4, model)
-        
-    print("\n" + "="*90)
+
+    # ── Recommendation ─────────────────────────────────────────────
+    has_hf_all = all(k in results for k in ("hf_fp16", "hf_int8", "hf_int4"))
+    api_key = os.environ.get("GROQ_API_KEY")
+
+    if api_key and has_hf_all:
+        ai_report = get_ai_recommendation(results, model, api_key)
+        if ai_report:
+            print("\n" + "=" * 90)
+            console.print(ai_report)
+            print("=" * 90)
+            print()
+            raise typer.Exit(0)
+
+    # offline fallback (also used when GROQ_API_KEY is not set)
+    report = generate_offline_recommendation(results, model)
+    print("\n" + "=" * 90)
     console.print(report)
-    print("="*90 + "\n")
+    print("=" * 90)
+
+    print()
+
 
 if __name__ == "__main__":
     app()

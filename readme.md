@@ -1,327 +1,178 @@
-# litmus-lab 
+# litmus-lab
 
-A blazing-fast, zero-dependency local CLI profiler built for benchmarking Large Language Models across different precision formats (**Native FP16 vs INT8 vs INT4**) directly on your GPU.
+A CLI tool for benchmarking LLM inference across quantization formats and backends. Load a model once per format, measure VRAM, throughput, latency, and quality side by side, then get a deployment recommendation based on the actual numbers.
 
-`litmus-lab` measures:
+```
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Mode            ┃ VRAM (MB) ┃ Tokens/sec (TPS) ┃ Time to First Token (TTFT) ┃ Perplexity ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ HF · FP16       │ 7297.83   │ 32.69            │ 0.0300 sec                 │ 5.64       │
+│ HF · INT8       │ 3846.47   │ 14.26            │ 0.0828 sec                 │ 5.81       │
+│ HF · INT4 (NF4) │ 2334.96   │ 25.98            │ 0.0686 sec                 │ 7.34       │
+│ vLLM · FP16     │ 12687.31  │ 111.68           │ 0.4477 sec                 │ 5.65       │
+└─────────────────┴───────────┴──────────────────┴────────────────────────────┴────────────┘
 
-- GPU VRAM consumption
-- Tokens per second (TPS)
-- Time to first token (TTFT)
-- Linguistic degradation (Perplexity)
-
-After profiling, an **offline mathematical heuristic engine** automatically recommends the best deployment precision for your hardware.
-
-No cloud APIs. No subscriptions. No hallucinated advice.
-
----
-
-# Features
-
-## Multi-Precision Benchmarking
-
-Profile and compare:
-
-- Native FP16
-- INT8 Quantization
-- INT4 Quantization (NF4/GPTQ-style)
-
-on the exact same prompt and architecture.
-
----
-
-## Offline Recommendation Engine
-
-`litmus-lab` contains a local rule-based mathematical evaluation engine.
-
-It automatically determines:
-
-- whether quantization is worth it
-- whether the VRAM savings justify the quality loss
-- if lower precision actually hurts latency or throughput
-- if perplexity degradation becomes unsafe
-
-Example:
-
-- Small models may not benefit from quantization
-- Some architectures become unstable in 4-bit
-- Certain GPUs gain VRAM savings but lose TPS
-
-The engine evaluates all of this locally and outputs a deployment verdict.
-
----
-
-## VRAM Isolation & Cleanup
-
-Each profiling worker is completely isolated.
-
-Between benchmark passes, `litmus-lab` aggressively performs:
-
-- CUDA cache cleanup
-- Python garbage collection
-- IPC memory clearing
-- model unloads
-- allocator flushes
-
-This prevents hidden memory leaks and false VRAM readings during sequential quantization tests.
-
----
-
-## 🛡 Context-Length Protection
-
-Some older transformer architectures crash if generation exceeds positional embedding limits.
-
-`litmus-lab` automatically:
-
-- reads `max_position_embeddings`
-- scales test sequence lengths safely
-- avoids index out-of-bound runtime failures
-
----
-
-## Beautiful Terminal Dashboard
-
-All benchmark data is rendered using rich terminal tables for clean visualization directly inside the CLI.
-
-Example:
-
-```plaintext
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃ Quantization ┃ VRAM (MB) ┃ Tokens/sec(TPS) ┃ Time to first token(TTFT) ┃ Perplexity ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ Native       │ 7540.12   │ 54.2180         │ 0.0120 sec                │ 12.42      │
-│ INT8         │ 4210.45   │ 18.9412         │ 0.0540 sec                │ 12.45      │
-│ INT4         │ 2840.88   │ 22.1054         │ 0.0610 sec                │ 12.68      │
-└──────────────┴───────────┴─────────────────┴───────────────────────────┴━━━━━━━━━━━━┛
+• Deploy vLLM FP16 for production serving.
+• vLLM is 241.5% faster than HF FP16 with negligible quality difference (PPL delta 0.01),
+  using 5390 MB more VRAM for its KV cache pool. For memory-constrained or single-user
+  setups, HF INT4 (NF4) is the best fallback (saves 4963 MB vs FP16, perplexity +1.70 PPL).
 ```
 
 ---
 
-# Installation
-
-Install globally from PyPI:
+## Installation
 
 ```bash
+# HF Transformers only
 pip install litmus-lab
+
+# HF + vLLM backend
+pip install "litmus-lab[vllm]"
+
+# HF + AI-powered recommendations (Groq)
+pip install "litmus-lab[ai]"
+
+# Everything
+pip install "litmus-lab[all]"
 ```
+
+> vLLM requires Linux or WSL2. It does not run on Windows natively.
 
 ---
 
-# Quick Start
-
-Run a full benchmark pass:
+## Usage
 
 ```bash
-litmus-lab --model microsoft/Phi-3-mini-4k-instruct --prompt "Write a short poem on a wall"
+litmus-lab inference \
+  --model microsoft/Phi-3-mini-4k-instruct \
+  --prompt "Explain the transformer architecture" \
+  --backend hf
 ```
 
----
+### Flags
 
-# CLI Options
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--model` | HuggingFace model repo ID | required |
+| `--prompt` | Input prompt for generation | required |
+| `--token` | HuggingFace token for gated models | `None` |
+| `--backend` | `hf` / `vllm` / `all` | `hf` |
 
-| Flag | Description |
-|------|-------------|
-| `--model` | Hugging Face model repository path |
-| `--prompt` | Prompt text sent to the inference runner |
-| `--token` | Optional Hugging Face token for gated models |
+### Backend modes
 
----
+| Mode | What runs |
+|------|-----------|
+| `hf` | HF Transformers — FP16, INT8, INT4 (NF4) |
+| `vllm` | vLLM — FP16 only |
+| `all` | All four passes in sequence |
 
-# Supported Models
-
-Most Hugging Face causal language models are supported, including:
-
-- Phi
-- Qwen
-- Gemma
-- Mistral
-- Llama
-- OPT
-- Falcon
-- TinyLlama
-- DeepSeek
-
-Examples:
+### Examples
 
 ```bash
-litmus-lab --model Qwen/Qwen2.5-7B-Instruct --prompt "Explain quantum gravity"
-```
-
-```bash
-litmus-lab --model google/gemma-2-2b-it --prompt "Write a Linux shell script"
-```
-
-```bash
-litmus-lab --model meta-llama/Llama-3.1-8B-Instruct --token YOUR_TOKEN --prompt "Explain TCP congestion control"
-```
-
----
-
-# Example System Evaluation Report
-
-```plaintext
-==========================================================================================
-SYSTEM EVALUATION REPORT FOR microsoft/Phi-3-mini-4k-instruct:
-
-• Recommendation: Deploy INT4 (NF4 format).
-
-• Reason:
-  Reclaims a significant 4699.24 MB of GPU VRAM compared to Native FP16 execution.
-
-  The perplexity delta remains tightly controlled (+0.26 PPL), making INT4 the
-  most hardware-efficient deployment format for this architecture size.
-
-==========================================================================================
-```
-
----
-
-# How Recommendations Are Calculated
-
-The heuristic engine evaluates:
-
-- VRAM reclaimed
-- TPS throughput changes
-- TTFT latency penalties
-- Perplexity degradation
-- architecture stability
-- quantization efficiency ratios
-
-The recommendation engine is completely offline and deterministic.
-
-No LLM APIs are used.
-
----
-
-# Why This Exists
-
-Most quantization tooling tells you:
-
-> "INT4 uses less memory."
-
-But memory reduction alone does not determine deployment quality.
-
-Some quantized models:
-
-- become slower
-- lose coherence
-- spike TTFT
-- destabilize logits
-- produce negligible VRAM savings
-
-`litmus-lab` exists to mathematically determine whether quantization is actually worth deploying on YOUR hardware.
-
----
-
-# Example Workflow
-
-```bash
-# Benchmark a 7B instruct model
-litmus-lab \
+# HF only — compare quantization formats
+litmus-lab inference \
   --model Qwen/Qwen2.5-7B-Instruct \
-  --prompt "Explain transformers in simple terms"
+  --prompt "Explain quantum gravity" \
+  --backend hf
+
+# vLLM only
+litmus-lab inference \
+  --model mistralai/Mistral-7B-Instruct-v0.3 \
+  --prompt "Write a Linux shell script" \
+  --backend vllm
+
+# Full comparison — HF + vLLM
+litmus-lab inference \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --token hf_xxxxxxx \
+  --prompt "Explain TCP congestion control" \
+  --backend all
 ```
+
+---
+
+## AI Recommendations
+
+Set a [Groq](https://console.groq.com) API key (free tier) to get an AI-powered recommendation from `llama-3.3-70b-versatile` instead of the built-in heuristic:
 
 ```bash
-# Benchmark a gated Llama model
-litmus-lab \
-  --model meta-llama/Llama-3.1-8B-Instruct \
-  --token hf_xxxxxxxxx \
-  --prompt "Write a memory allocator in C"
+export GROQ_API_KEY=gsk_...
 ```
 
----
-
-# Performance Metrics Explained
-
-## VRAM (MB)
-
-Peak GPU memory allocated during inference.
+No extra flags needed. If the key is missing, the rate limit is hit, or there is no internet, the tool silently falls back to the offline engine.
 
 ---
 
-## Tokens/sec (TPS)
+## Metrics
 
-Measures generation throughput speed.
-
-Higher is better.
-
----
-
-## Time To First Token (TTFT)
-
-Measures inference latency before the first generated token appears.
-
-Lower is better.
+| Metric | What it measures |
+|--------|-----------------|
+| **VRAM (MB)** | Peak GPU memory consumed — model weights + KV cache |
+| **TPS** | Tokens generated per second — throughput |
+| **TTFT** | Time to first token — generation latency |
+| **Perplexity** | Language quality on WikiText-2. Lower is better. Delta >2.0 vs FP16 signals degradation |
 
 ---
 
-## Perplexity (PPL)
+## Supported models
 
-Measures language degradation and prediction uncertainty.
+### HF backend (FP16 / INT8 / INT4)
 
-Lower is better.
+Any HuggingFace **causal language model** that loads via `AutoModelForCausalLM`:
 
-Small increases are acceptable.
+- **Meta** — Llama 3, 3.1, 3.2, 3.3
+- **Mistral AI** — Mistral 7B, Mixtral 8x7B
+- **Microsoft** — Phi-3, Phi-3.5, Phi-4
+- **Google** — Gemma, Gemma 2
+- **Alibaba** — Qwen2, Qwen2.5
+- **DeepSeek** — DeepSeek-R1, DeepSeek-V2
+- **Falcon, Yi, BLOOM**, and most community fine-tunes
 
-Large jumps indicate quantization damage.
+Gated models (Llama, Gemma) require `--token`.
 
----
+### vLLM backend (FP16)
 
-# Architecture
-
-`litmus-lab` internally uses:
-
-- PyTorch
-- Transformers
-- bitsandbytes
-- CUDA memory instrumentation
-- isolated worker runners
-- rich terminal rendering
-
-while exposing a single lightweight CLI interface.
+Same model coverage as HF. vLLM runs FP16 only using PagedAttention + FlashAttention-2 — no on-the-fly quantization. VRAM usage is higher than HF FP16 because vLLM pre-allocates the KV cache pool on startup.
 
 ---
 
-# Roadmap
+## What is NOT supported
 
-Planned future features:
+| Limitation | Reason |
+|------------|--------|
+| Encoder-only models (BERT, RoBERTa) | Use `AutoModelForMaskedLM`, not causal LM |
+| Encoder-decoder models (T5, BART, mT5) | Use `AutoModelForSeq2SeqLM`, not causal LM |
+| AWQ / GPTQ via vLLM | Requires a pre-quantized checkpoint (e.g. `TheBloke/Mistral-7B-AWQ`), not a base model repo |
+| Models larger than GPU VRAM at FP16 | Will OOM on the HF FP16 pass — use a smaller model or `--backend vllm` only |
+| vLLM on Windows | vLLM requires Linux or WSL2 |
+| Multi-GPU inference | Single GPU only — tensor parallel not supported |
 
-- ONNX Runtime benchmarking
-- GGUF profiling
-- AWQ/GPTQ support
-- AMD ROCm backend
-- CPU-only profiling
-- tensor parallel profiling
-- JSON/CSV export mode
-- benchmark history tracking
-- automated regression detection
-
----
-
-# License
-
-MIT License
-
-Free to use, modify, distribute, and integrate into commercial tooling.
+> **Large-context models:** Qwen2.5 and similar models with 128K+ context windows are capped at 512 tokens for perplexity computation to prevent OOM. TPS and TTFT measurements are not affected.
 
 ---
 
-# Contributing
+## How it works
 
-Pull requests, issue reports, architecture improvements, and benchmark contributions are welcome.
+Each format is benchmarked sequentially. The model is fully loaded, measured, then completely removed from GPU memory before the next format loads — no VRAM bleed between passes.
+
+**HF backend** uses [bitsandbytes](https://github.com/TimDettmers/bitsandbytes):
+- INT8 — `BitsAndBytesConfig(load_in_8bit=True)`
+- INT4 — `BitsAndBytesConfig(load_in_4bit=True)` with NF4 (NormalFloat4)
+
+**vLLM backend** uses PagedAttention + FlashAttention-2 for high-throughput FP16 inference. VRAM is measured as the delta between free GPU memory before and after model initialization, capturing both model weights and the pre-allocated KV cache pool.
+
+**Perplexity** is computed on a 512-token slice of WikiText-2 using cross-entropy loss.
 
 ---
 
-# Disclaimer
+## Requirements
 
-Benchmark results vary depending on:
+- Python 3.10+
+- CUDA-capable GPU (CPU works but is very slow)
+- CUDA 11.8+ / 12.x
 
-- GPU architecture
-- CUDA version
-- driver versions
-- kernel scheduler state
-- model architecture
-- tokenizer implementation
-- quantization backend
+---
 
-Always validate production deployments independently.
+## License
+
+MIT
