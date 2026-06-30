@@ -33,10 +33,6 @@ const config: Config = {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0" },
         },
-        marquee: {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" },
-        },
         drift: {
           "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
           "33%": { transform: "translate3d(4%,-3%,0) scale(1.08)" },
@@ -49,7 +45,6 @@ const config: Config = {
       },
       animation: {
         blink: "blink 1s step-end infinite",
-        marquee: "marquee 30s linear infinite",
         drift: "drift 22s ease-in-out infinite",
         "drift-slow": "drift 34s ease-in-out infinite",
         float: "float 6s ease-in-out infinite",

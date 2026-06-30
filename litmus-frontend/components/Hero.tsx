@@ -28,7 +28,7 @@ export default function Hero() {
             className="glass-soft inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs text-bone-muted transition-colors hover:text-bone"
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-coral" />
-            Now in private beta · join the waitlist
+            CLI is free &amp; live · join waitlist for the platform
             <span className="text-bone-faint">→</span>
           </motion.a>
 

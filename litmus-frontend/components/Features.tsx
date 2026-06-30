@@ -26,8 +26,8 @@ const bars = [
 
 const features = [
   {
-    title: "AI-powered recommendations",
-    body: "Set GROQ_API_KEY and get a Llama-3.3-70B verdict that reads your full results table. No key? The offline heuristic runs deterministically with no internet required.",
+    title: "Deployment verdict engine",
+    body: "A deterministic engine weighs your measured VRAM, throughput and perplexity delta against deployment thresholds — and outputs one verdict. No prompts. No hallucinations. Just your numbers.",
     icon: (
       <Icon
         d={
@@ -94,7 +94,7 @@ export default function Features() {
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.02em] sm:text-5xl">
-            Everything you need to ship quantized — <span className="text-coral-gradient">with proof.</span>
+            Measure everything. <span className="text-coral-gradient">Guess nothing.</span>
           </h2>
         </Reveal>
 

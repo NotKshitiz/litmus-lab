@@ -10,21 +10,36 @@ const stages = [
     status: "Available now",
     live: true,
     title: "The CLI",
-    desc: "Profile any model across HF (FP16 · INT8 · INT4) and vLLM on your own GPU — one command, one verdict, AI-powered or fully offline.",
+    tagline: "Free. Runs on your GPU. No signup.",
+    steps: [
+      "pip install litmus-lab on any NVIDIA GPU",
+      "Run --backend all — benchmarks HF (FP16/INT8/INT4) and vLLM in one shot",
+      "Get a single verdict: which backend, which precision, and why",
+    ],
   },
   {
     n: "02",
     status: "Coming soon",
     live: false,
     title: "The Platform",
-    desc: "Shareable reports, an instant benchmark database, new-model alerts, and cost prediction for your whole team.",
+    tagline: "$199/mo · team dashboards · new-model alerts",
+    steps: [
+      "Benchmark results auto-upload to your team dashboard",
+      "Get alerted when a newer model beats what you're running in production",
+      "Share reports, track cost across GPU upgrades, predict $/1M tokens at your concurrency",
+    ],
   },
   {
     n: "03",
     status: "Coming soon",
     live: false,
     title: "Cost Autopilot",
-    desc: "An agent watches your live deployment and surfaces the exact change to cut cost — before you overspend.",
+    tagline: "$2K–10K/mo · monitors your live deployment",
+    steps: [
+      "A lightweight agent runs next to your vLLM in production",
+      "Streams live GPU utilization, request concurrency, and cost per request",
+      "Surfaces the exact format change to cut your bill — before your cloud invoice does",
+    ],
   },
 ];
 
@@ -63,53 +78,66 @@ export default function Roadmap() {
         </p>
       </Reveal>
 
-      {/* checkpoint timeline */}
-      <div className="relative mt-16">
-        {/* connector — vertical on mobile, horizontal on desktop */}
-        <div className="absolute bottom-5 left-[19px] top-5 w-px bg-white/10 md:hidden" />
-        <div className="absolute left-[16.666%] right-[16.666%] top-5 hidden h-px bg-white/10 md:block" />
+      {/* stage cards */}
+      <div className="mt-16 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {stages.map((s, i) => (
+          <motion.div
+            key={s.n}
+            initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.55, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className={`glass relative flex flex-col overflow-hidden rounded-3xl p-7 ${s.live ? "border-coral/20" : ""}`}
+          >
+            {s.live && (
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-coral/10 blur-2xl" />
+            )}
 
-        <div className="grid gap-12 md:grid-cols-3 md:gap-8">
-          {stages.map((s, i) => (
-            <motion.div
-              key={s.n}
-              initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.55, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
-              className="relative flex items-start gap-5 md:flex-col md:items-center md:gap-0 md:text-center"
-            >
+            {/* header */}
+            <div className="relative flex items-start justify-between gap-3">
               <Node live={s.live} n={s.n} />
-              <div className="md:mt-6 md:px-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                    s.live ? "bg-coral/15 text-coral-bright" : "bg-white/5 text-bone-muted"
-                  }`}
-                >
-                  {s.live && (
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-coral" />
-                    </span>
-                  )}
-                  {s.status}
-                </span>
-                <h3 className="mt-4 text-xl font-semibold tracking-tight">{s.title}</h3>
-                <p className="mx-auto mt-2 max-w-xs leading-relaxed text-bone-muted">{s.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  s.live ? "bg-coral/15 text-coral-bright" : "bg-white/5 text-bone-muted"
+                }`}
+              >
+                {s.live && (
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-coral opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-coral" />
+                  </span>
+                )}
+                {s.status}
+              </span>
+            </div>
+
+            {/* title */}
+            <h3 className="relative mt-5 text-xl font-semibold tracking-tight">{s.title}</h3>
+            <p className="relative mt-1 font-mono text-xs text-coral/70">{s.tagline}</p>
+
+            {/* user journey steps */}
+            <ul className="relative mt-5 flex flex-col gap-3">
+              {s.steps.map((step, j) => (
+                <li key={j} className="flex items-start gap-2.5 text-sm leading-relaxed text-bone-muted">
+                  <span className="mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-white/10 font-mono text-[9px] text-bone-faint">
+                    {j + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        ))}
       </div>
 
-      {/* featured savings alert infographic */}
+      {/* autopilot alert infographic */}
       <Reveal delay={0.1}>
-        <div className="glass relative mt-16 overflow-hidden rounded-3xl p-7 sm:p-10">
+        <div className="glass relative mt-8 overflow-hidden rounded-3xl p-7 sm:p-10">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-coral/10 blur-3xl" />
           <div className="relative grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-coral/10 px-3 py-1 text-xs text-coral-bright">
-                <span>🔔</span> Autopilot alert
+                <span>🔔</span> Stage 3 autopilot alert
               </div>
               <p className="mt-4 text-xl font-medium leading-snug sm:text-2xl">
                 DeepSeek-V3 matches your current Llama-3.1-70B quality at{" "}
