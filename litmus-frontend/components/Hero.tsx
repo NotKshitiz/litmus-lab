@@ -7,11 +7,16 @@ import CopyCommand from "./CopyCommand";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-const stats = [
-  { value: "4", label: "precision modes" },
-  { value: "2", label: "backends" },
-  { value: "1", label: "verdict" },
-  { value: "0", label: "config needed" },
+const live = [
+  { label: "HF · FP16 / INT8 / INT4" },
+  { label: "vLLM · FP16" },
+  { label: "NVIDIA GPU" },
+];
+
+const building = [
+  { label: "GGUF · llama.cpp" },
+  { label: "Cost prediction" },
+  { label: "Multi-GPU" },
 ];
 
 export default function Hero() {
@@ -82,18 +87,25 @@ export default function Hero() {
           <CopyCommand />
         </motion.div>
 
-        {/* live stats */}
+        {/* live vs building */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.35 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
+          className="mt-10 flex flex-wrap items-center justify-center gap-2"
         >
-          {stats.map((s, i) => (
-            <div key={i} className="flex items-baseline gap-1.5">
-              <span className="font-mono text-2xl font-semibold tracking-tight text-bone">{s.value}</span>
-              <span className="text-sm text-bone-faint">{s.label}</span>
-            </div>
+          {live.map((s, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3.5 py-1.5 text-xs text-bone-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
+              {s.label}
+            </span>
+          ))}
+          <span className="text-bone-faint/30 text-lg mx-1">·</span>
+          {building.map((s, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.02] px-3.5 py-1.5 text-xs text-bone-faint">
+              <span className="h-1.5 w-1.5 rounded-full bg-coral/50 animate-pulse" />
+              {s.label}
+            </span>
           ))}
         </motion.div>
 

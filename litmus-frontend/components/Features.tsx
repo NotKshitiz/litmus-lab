@@ -14,14 +14,15 @@ function Icon({ d }: { d: ReactNode }) {
 
 const flagship = {
   title: "Multi-backend benchmarking",
-  body: "Profile HuggingFace (FP16 · INT8 · INT4) and vLLM on the exact same prompt — measured side by side on your GPU, never estimated. Use --backend hf, vllm, or all.",
+  body: "HuggingFace (FP16 · INT8 · INT4) and vLLM are live now. GGUF / llama.cpp support is actively being built — so CPU and Mac users can benchmark too.",
   icon: <Icon d={<path d="M4 19V9M10 19V5M16 19v-7M22 19H2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />} />,
 };
 
 const bars = [
-  { label: "HF FP16",  val: "32.7 TPS",  w: "29%" },
-  { label: "HF INT4",  val: "26.0 TPS",  w: "23%" },
-  { label: "vLLM FP16", val: "111.7 TPS", w: "100%", highlight: true },
+  { label: "HF FP16",   val: "32.7 TPS",   w: "29%",  live: true },
+  { label: "HF INT4",   val: "26.0 TPS",   w: "23%",  live: true },
+  { label: "vLLM FP16", val: "111.7 TPS",  w: "100%", live: true, highlight: true },
+  { label: "GGUF",      val: "coming soon", w: "0%",   live: false },
 ];
 
 const features = [
@@ -54,8 +55,8 @@ const features = [
     ),
   },
   {
-    title: "Cost prediction",
-    body: "Point at your target concurrency and GPU hourly rate — litmus-lab projects token cost per request so you know before you deploy, not after your bill arrives.",
+    title: "Cost prediction — in progress",
+    body: "Pass --target-users and --gpu-cost and litmus-lab will project token cost per request at your concurrency. Shipping soon.",
     icon: (
       <Icon
         d={
@@ -118,20 +119,28 @@ export default function Features() {
                 <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-bone-faint">Throughput comparison</p>
                 {bars.map((b) => (
                   <div key={b.label} className="flex items-center gap-3 font-mono text-xs">
-                    <span className={`w-20 shrink-0 ${b.highlight ? "text-coral" : "text-bone-faint"}`}>{b.label}</span>
+                    <span className={`w-20 shrink-0 ${b.highlight ? "text-coral" : b.live ? "text-bone-faint" : "text-bone-faint/40"}`}>
+                      {b.label}
+                    </span>
                     <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/5">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        whileInView={{ width: b.w }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                        className={`h-full rounded-full ${b.highlight ? "bg-gradient-to-r from-coral-deep to-coral" : "bg-white/20"}`}
-                      />
+                      {b.live ? (
+                        <motion.div
+                          initial={{ width: 0 }}
+                          whileInView={{ width: b.w }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                          className={`h-full rounded-full ${b.highlight ? "bg-gradient-to-r from-coral-deep to-coral" : "bg-white/20"}`}
+                        />
+                      ) : (
+                        <div className="h-full w-full rounded-full bg-white/[0.04] border border-dashed border-white/10" />
+                      )}
                     </div>
-                    <span className={`w-20 shrink-0 text-right ${b.highlight ? "font-semibold text-coral" : "text-bone"}`}>{b.val}</span>
+                    <span className={`w-24 shrink-0 text-right ${b.highlight ? "font-semibold text-coral" : b.live ? "text-bone" : "text-bone-faint/40 italic"}`}>
+                      {b.val}
+                    </span>
                   </div>
                 ))}
-                <p className="pt-1 font-mono text-[10px] text-coral/60">↑ vLLM PagedAttention · 3.4× over HF FP16</p>
+                <p className="pt-1 font-mono text-[10px] text-coral/60">↑ vLLM live · GGUF actively being built</p>
               </div>
             </div>
           </motion.div>
