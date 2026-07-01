@@ -15,7 +15,7 @@
 
 ## What it does
 
-`litmus-lab` runs your model through HuggingFace (FP16, INT8, INT4) and vLLM in isolated passes — measuring VRAM, throughput, latency and perplexity on your actual hardware — then outputs a single deployment recommendation.
+`litmus-lab` runs your model through HuggingFace (FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto INT8/INT4, plus AWQ/GPTQ against a pre-quantized checkpoint) and vLLM (FP16, BitsAndBytes, FP8, AWQ, GPTQ) in isolated passes — measuring VRAM, throughput, latency and perplexity on your actual hardware — then outputs a single deployment recommendation.
 
 ```
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┓
@@ -23,13 +23,13 @@
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━┩
 │ HF · FP16       │ 7297.83   │ 32.69    │ 0.030s   │ 5.64       │
 │ HF · INT8       │ 3846.47   │ 14.26    │ 0.083s   │ 5.81       │
-│ HF · INT4 (NF4) │ 2334.96   │ 25.98    │ 0.069s   │ 7.34       │
+│ HF · NF4        │ 2334.96   │ 25.98    │ 0.069s   │ 7.34       │
 │ vLLM · FP16     │ 12687.31  │ 111.68   │ 0.448s   │ 5.65       │
 └─────────────────┴───────────┴──────────┴──────────┴────────────┘
 
   Recommendation  Deploy vLLM · FP16
                   3.4× faster than HF · PPL delta 0.01
-                  Memory-constrained? HF · INT4 saves 4963 MB (PPL +1.70)
+                  Memory-constrained? HF · NF4 saves 4963 MB (PPL +1.70)
 ```
 
 ---
@@ -37,14 +37,17 @@
 ## Installation
 
 ```bash
-# HF Transformers only (FP16, INT8, INT4)
+# HF Transformers backend — FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto INT8/INT4
 pip install litmus-lab
 
-# HF + vLLM backend
+# + vLLM backend (FP16, BitsAndBytes, FP8)
 pip install "litmus-lab[vllm]"
 
-# HF + AI recommendations via Groq
+# + AI recommendations via Groq
 pip install "litmus-lab[ai]"
+
+# + AWQ / GPTQ pre-quantized checkpoint support (HF + vLLM)
+pip install "litmus-lab[awq,gptq]"
 
 # Everything
 pip install "litmus-lab[all]"
@@ -75,15 +78,19 @@ litmus-lab \
 | `--prompt` | Input prompt | required |
 | `--backend` | `hf` · `vllm` · `all` | `hf` |
 | `--token` | HuggingFace token for gated models | `None` |
+| `--awq-model` | Pre-quantized AWQ checkpoint repo (e.g. `TheBloke/Mistral-7B-v0.1-AWQ`). Enables the HF/vLLM AWQ rows | `None` |
+| `--gptq-model` | Pre-quantized GPTQ checkpoint repo (e.g. `TheBloke/Mistral-7B-v0.1-GPTQ`). Enables the HF/vLLM GPTQ rows | `None` |
 | `--version` | Print version and exit | — |
 
 ### Backend modes
 
 | Mode | What runs |
 |------|-----------|
-| `hf` | HF Transformers · FP16, INT8, INT4 (NF4) |
-| `vllm` | vLLM · FP16 with PagedAttention |
-| `all` | All four passes in sequence |
+| `hf` | HF Transformers · FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto INT8/INT4 — plus AWQ/GPTQ if `--awq-model`/`--gptq-model` are given |
+| `vllm` | vLLM · FP16, BitsAndBytes, FP8 — plus AWQ/GPTQ if `--awq-model`/`--gptq-model` are given |
+| `all` | Both of the above in sequence |
+
+Any mode that hits a missing optional dependency or an unsupported GPU (e.g. FP8 on pre-Hopper hardware) prints a yellow skip line and continues — it won't abort the whole run.
 
 ### Examples
 
@@ -106,6 +113,14 @@ litmus-lab \
   --token hf_xxxxxxx \
   --prompt "Explain TCP congestion control" \
   --backend all
+
+# Include AWQ / GPTQ rows against pre-quantized checkpoints
+litmus-lab \
+  --model teknium/OpenHermes-2.5-Mistral-7B \
+  --prompt "Explain the theory of relativity in simple terms" \
+  --backend all \
+  --awq-model TheBloke/OpenHermes-2.5-Mistral-7B-AWQ \
+  --gptq-model TheBloke/OpenHermes-2.5-Mistral-7B-GPTQ
 ```
 
 ---
@@ -136,7 +151,7 @@ No extra flags needed. Falls back to the offline heuristic automatically if the 
 
 ## Supported models
 
-### ✅ HF backend — FP16 · INT8 · INT4
+### ✅ HF backend
 
 Any HuggingFace causal language model loadable via `AutoModelForCausalLM`:
 
@@ -152,9 +167,29 @@ Any HuggingFace causal language model loadable via `AutoModelForCausalLM`:
 
 Gated models (Llama, Gemma) require `--token`.
 
-### ✅ vLLM backend — FP16
+Quantization modes run against the base repo on the fly — no separate checkpoint needed — except AWQ/GPTQ:
 
-Same model coverage as HF. Runs FP16 only. VRAM is higher than HF FP16 due to the KV cache pool but throughput is significantly better under concurrent load.
+| Mode | Notes |
+|------|-------|
+| FP16 | native precision, no quantization |
+| INT8 | bitsandbytes `load_in_8bit` |
+| NF4 | bitsandbytes 4-bit, NormalFloat4 |
+| FP4 | bitsandbytes 4-bit, FloatingPoint4 |
+| NF4 + double quant | NF4 with nested quantization of the quant constants for extra VRAM savings |
+| HQQ | Half-Quadratic Quantization — requires `hqq` (bundled by default). Skips cleanly if your transformers version hasn't finished migrating HQQ's loading path yet (`NotImplementedError`) |
+| Quanto INT8 / INT4 | `optimum-quanto` weight-only quantization (bundled by default) |
+| AWQ / GPTQ | requires `--awq-model` / `--gptq-model` pointing at a pre-quantized checkpoint, plus `pip install litmus-lab[awq,gptq]` |
+
+### ✅ vLLM backend
+
+Same model coverage as HF. VRAM is generally higher than HF at the same precision due to the KV cache pool, but throughput is significantly better under concurrent load.
+
+| Mode | Notes |
+|------|-------|
+| FP16 | native precision with PagedAttention |
+| BitsAndBytes | on-the-fly quantization of the base checkpoint |
+| FP8 | on-the-fly W8A8 — requires a Hopper/Ada-class GPU (H100, L4, RTX 4090+); skips cleanly on older GPUs |
+| AWQ / GPTQ | requires `--awq-model` / `--gptq-model` pointing at a pre-quantized checkpoint |
 
 ### ❌ Not supported
 
@@ -170,9 +205,13 @@ Same model coverage as HF. Runs FP16 only. VRAM is higher than HF FP16 due to th
 
 ## Requirements
 
-- Python **3.10+**
-- CUDA-capable NVIDIA GPU (CPU works but is very slow)
-- CUDA **11.8+** or **12.x**
+- **Python 3.10+**
+- **NVIDIA GPU** with CUDA support (CPU works but is very slow, and quantization gives smaller wins there)
+- **NVIDIA driver + CUDA 11.8+ / 12.x** for most GPUs. **Exception: Blackwell-generation GPUs (RTX 50-series, compute capability 12.x)** need **CUDA ≥ 12.9 and driver ≥ 575.51** — the `vllm` backend's FlashInfer kernels fail to initialize below that (`RuntimeError: FlashInfer requires GPUs with sm75 or higher` / `SM 12.x requires CUDA >= 12.9`). The `hf` backend is unaffected and works fine on any CUDA version.
+- **Disk space** for whatever model you benchmark — 7B models are roughly 15-30GB on disk depending on dtype — plus the small WikiText-2 dataset used for perplexity
+- **`--token`** required for gated models (Llama, Gemma, etc.)
+- **vLLM backend** (`--backend vllm` / `all`): Linux or WSL2 only, install with `pip install "litmus-lab[vllm]"` — does not run natively on Windows
+- **AWQ/GPTQ pre-quantized modes** (`--awq-model` / `--gptq-model`): need `pip install "litmus-lab[awq,gptq]"` and a separately pre-quantized checkpoint repo (e.g. `TheBloke/*-AWQ`) — these don't run against the base model repo
 
 ---
 
@@ -186,7 +225,6 @@ Same model coverage as HF. Runs FP16 only. VRAM is higher than HF FP16 due to th
 | Multi-model comparison in one run | 📋 Planned |
 | JSON / HTML report export | 📋 Planned |
 | Multi-GPU / tensor parallel benchmarking | 📋 Planned |
-| AWQ / GPTQ quantization on vLLM backend | 📋 Planned |
 
 > Want to shape the roadmap? [Open an issue](https://github.com/NotKshitiz/litmus-lab/issues) or join the [waitlist](https://litmuslab.io) for the web platform.
 

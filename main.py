@@ -11,6 +11,7 @@ from transformers import logging
 from transformers.utils.logging import disable_progress_bar
 
 from backends.hf import hf_bench
+from backends.telemetry import is_first_run, ping
 
 warnings.filterwarnings("ignore")
 datasets.logging.set_verbosity_error()
@@ -23,8 +24,43 @@ python_logging.getLogger("huggingface_hub").setLevel(python_logging.ERROR)
 logging.set_verbosity_error()
 disable_progress_bar()
 
+__version__ = "0.3.2"
+
 app = typer.Typer()
 console = Console()
+
+# On-the-fly modes run automatically against `--model`. AWQ/GPTQ need a
+# separately pre-quantized checkpoint, supplied via `--quant-model`.
+HF_ONFLY_MODES = [
+    ("hf_fp16",        None,          "HF · FP16          "),
+    ("hf_int8",        "int8",        "HF · INT8          "),
+    ("hf_nf4",         "nf4",         "HF · NF4           "),
+    ("hf_fp4",         "fp4",         "HF · FP4           "),
+    ("hf_nf4_double",  "nf4_double",  "HF · NF4 (2x quant)"),
+    ("hf_hqq",         "hqq",         "HF · HQQ           "),
+    ("hf_quanto_int8", "quanto_int8", "HF · Quanto INT8   "),
+    ("hf_quanto_int4", "quanto_int4", "HF · Quanto INT4   "),
+]
+HF_PREQUANT_MODES = [
+    ("hf_awq",  "awq",  "HF · AWQ (pre-quant) "),
+    ("hf_gptq", "gptq", "HF · GPTQ (pre-quant)"),
+]
+VLLM_ONFLY_MODES = [
+    ("vllm_fp16", None,           "vLLM · FP16          "),
+    ("vllm_bnb",  "bitsandbytes", "vLLM · BitsAndBytes  "),
+    ("vllm_fp8",  "fp8",          "vLLM · FP8           "),
+]
+VLLM_PREQUANT_MODES = [
+    ("vllm_awq",  "awq",  "vLLM · AWQ (pre-quant) "),
+    ("vllm_gptq", "gptq", "vLLM · GPTQ (pre-quant)"),
+]
+ALL_RESULT_ROWS = HF_ONFLY_MODES + HF_PREQUANT_MODES + VLLM_ONFLY_MODES + VLLM_PREQUANT_MODES
+
+
+def _version_callback(value: bool):
+    if value:
+        print(f"litmus-lab {__version__}")
+        raise typer.Exit()
 
 
 def get_ai_recommendation(results: dict, model_name: str, api_key: str) -> str | None:
@@ -44,12 +80,7 @@ def get_ai_recommendation(results: dict, model_name: str, api_key: str) -> str |
         "",
         "Benchmark Results:",
     ]
-    for key, label in [
-        ("hf_fp16",   "HF FP16      "),
-        ("hf_int8",   "HF INT8      "),
-        ("hf_int4",   "HF INT4 (NF4)"),
-        ("vllm_fp16", "vLLM FP16    "),
-    ]:
+    for key, _, label in ALL_RESULT_ROWS:
         if key in results:
             m = results[key]
             lines.append(
@@ -93,36 +124,36 @@ def generate_offline_recommendation(results: dict, model_name: str) -> str:
 
     native = results.get("hf_fp16")
     int8   = results.get("hf_int8")
-    int4   = results.get("hf_int4")
+    nf4    = results.get("hf_nf4")
     vllm   = results.get("vllm_fp16")
 
-    has_hf = native and int8 and int4
+    has_hf = native and int8 and nf4
 
     # ── pick best HF quantization ──────────────────────────────────
     hf_pick = hf_reason = None
     if has_hf:
-        vram_saved_int8    = native["mem"] - int8["mem"]
-        vram_saved_int4    = native["mem"] - int4["mem"]
-        speed_drop_int4_pct = ((native["tps"] - int4["tps"]) / native["tps"]) * 100
+        vram_saved_int8   = native["mem"] - int8["mem"]
+        vram_saved_nf4    = native["mem"] - nf4["mem"]
+        speed_drop_nf4_pct = ((native["tps"] - nf4["tps"]) / native["tps"]) * 100
         speed_drop_int8_pct = ((native["tps"] - int8["tps"]) / native["tps"]) * 100
-        ppl_growth_int8    = int8["perplexity"] - native["perplexity"]
-        ppl_growth_int4    = int4["perplexity"] - native["perplexity"]
+        ppl_growth_int8   = int8["perplexity"] - native["perplexity"]
+        ppl_growth_nf4    = nf4["perplexity"] - native["perplexity"]
 
         if native["mem"] < 1000:
             hf_pick   = "FP16"
             hf_reason = f"baseline VRAM is tiny ({native['mem']:.0f} MB), quantization has no benefit"
-        elif ppl_growth_int4 > 2.0:
+        elif ppl_growth_nf4 > 2.0:
             hf_pick   = "INT8"
             hf_reason = (
-                f"INT4 degrades quality too much (+{ppl_growth_int4:.2f} PPL); "
+                f"NF4 degrades quality too much (+{ppl_growth_nf4:.2f} PPL); "
                 f"INT8 saves {vram_saved_int8:.0f} MB with stable quality (+{ppl_growth_int8:.2f} PPL)"
             )
-        elif int4["tps"] >= int8["tps"] or (speed_drop_int4_pct - speed_drop_int8_pct) < 15:
-            hf_pick   = "INT4 (NF4)"
-            hf_reason = f"saves {vram_saved_int4:.0f} MB vs FP16, perplexity stays tight (+{ppl_growth_int4:.2f} PPL)"
+        elif nf4["tps"] >= int8["tps"] or (speed_drop_nf4_pct - speed_drop_int8_pct) < 15:
+            hf_pick   = "NF4"
+            hf_reason = f"saves {vram_saved_nf4:.0f} MB vs FP16, perplexity stays tight (+{ppl_growth_nf4:.2f} PPL)"
         else:
             hf_pick   = "INT8"
-            hf_reason = f"INT4 costs {speed_drop_int4_pct:.1f}% TPS for only {vram_saved_int4:.0f} MB extra savings"
+            hf_reason = f"NF4 costs {speed_drop_nf4_pct:.1f}% TPS for only {vram_saved_nf4:.0f} MB extra savings"
 
     # ── factor in vLLM if available ────────────────────────────────
     if vllm and native:
@@ -153,7 +184,7 @@ def generate_offline_recommendation(results: dict, model_name: str) -> str:
                 verdict = "[yellow]Deploy HF FP16.[/yellow]"
                 reason  = f"vLLM offers only {tps_delta_pct:.1f}% throughput gain, not worth the overhead."
     elif has_hf:
-        color   = "green" if hf_pick in ("FP16", "INT4 (NF4)") else "yellow"
+        color   = "green" if hf_pick in ("FP16", "NF4") else "yellow"
         verdict = f"[{color}]Deploy HF {hf_pick}.[/{color}]"
         reason  = hf_reason.capitalize() + "."
     else:
@@ -163,15 +194,31 @@ def generate_offline_recommendation(results: dict, model_name: str) -> str:
 
 
 @app.command()
-def inference(
+def run(
     model: Annotated[str, typer.Option(help="HuggingFace model repo")],
     prompt: Annotated[str, typer.Option(help="Input prompt")],
     token: Annotated[str, typer.Option(help="HuggingFace token for gated models")] = None,
     backend: Annotated[str, typer.Option(help="Backend to benchmark: hf | vllm | all")] = "hf",
+    awq_model: Annotated[
+        str,
+        typer.Option(help="Pre-quantized AWQ checkpoint repo (e.g. TheBloke/Mistral-7B-v0.1-AWQ). AWQ modes are skipped if omitted."),
+    ] = None,
+    gptq_model: Annotated[
+        str,
+        typer.Option(help="Pre-quantized GPTQ checkpoint repo (e.g. TheBloke/Mistral-7B-v0.1-GPTQ). GPTQ modes are skipped if omitted."),
+    ] = None,
+    version: bool = typer.Option(None, "--version", "-v", callback=_version_callback, is_eager=True, help="Show version and exit"),
 ):
     if backend not in ("hf", "vllm", "all"):
         console.print("[red]--backend must be one of: hf, vllm, all[/red]")
         raise typer.Exit(1)
+
+    if is_first_run():
+        console.print(
+            "[dim]litmus-lab collects anonymous telemetry (backend used, GPU type, OS). "
+            "No prompts, model names, or results are sent. "
+            "Opt out: export LITMUS_NO_TELEMETRY=1[/dim]\n"
+        )
 
     run_hf = backend in ("hf", "all")
     run_vllm = backend in ("vllm", "all")
@@ -182,20 +229,26 @@ def inference(
 
     results = {}
 
+    prequant_repo = {"awq": awq_model, "gptq": gptq_model}
+
     if run_hf:
-        for key, quantization, label in [
-            ("hf_fp16", None,   "HF · FP16      "),
-            ("hf_int8", "int8", "HF · INT8      "),
-            ("hf_int4", "int4", "HF · INT4 (NF4)"),
-        ]:
+        hf_jobs = [(key, quantization, model, label) for key, quantization, label in HF_ONFLY_MODES]
+        hf_jobs += [
+            (key, quantization, prequant_repo[quantization], label)
+            for key, quantization, label in HF_PREQUANT_MODES
+            if prequant_repo[quantization]
+        ]
+
+        for key, quantization, target_model, label in hf_jobs:
             console.print(f"[cyan]Benchmarking {label.strip()}...[/cyan]")
-            results[key] = hf_bench(model, prompt, token, quantization=quantization)
+            try:
+                results[key] = hf_bench(target_model, prompt, token, quantization=quantization)
+            except Exception as e:
+                console.print(f"[yellow]Skipping {label.strip()}: {type(e).__name__}: {e}[/yellow]")
 
     if run_vllm:
-        console.print("[magenta]Benchmarking vLLM · FP16...[/magenta]")
         try:
             from backends.vllm import vllm_bench
-            results["vllm_fp16"] = vllm_bench(model, prompt, token, quantization=None)
         except ImportError:
             console.print(
                 "[red]vLLM is not installed — skipping. "
@@ -204,16 +257,40 @@ def inference(
             )
             if not run_hf:
                 raise typer.Exit(1)
+            vllm_bench = None
+
+        if vllm_bench and torch.cuda.is_available():
+            cap_major, _ = torch.cuda.get_device_capability()
+            cuda_ver = torch.version.cuda
+            if cap_major >= 12 and cuda_ver and float(cuda_ver) < 12.9:
+                console.print(
+                    f"[yellow]Warning: {torch.cuda.get_device_name()} is a Blackwell-class GPU "
+                    f"(compute capability {cap_major}.x) but torch is built for CUDA {cuda_ver}. "
+                    f"vLLM's FlashInfer kernels require CUDA >= 12.9 for this GPU generation and will "
+                    f"likely fail to initialize below.[/yellow]\n"
+                    f"[dim]Fix: pip install torch --index-url https://download.pytorch.org/whl/cu129 "
+                    f"(also requires an NVIDIA driver >= 575.51 on the host).[/dim]\n"
+                )
+
+        if vllm_bench:
+            vllm_jobs = [(key, quantization, model, label) for key, quantization, label in VLLM_ONFLY_MODES]
+            vllm_jobs += [
+                (key, quantization, prequant_repo[quantization], label)
+                for key, quantization, label in VLLM_PREQUANT_MODES
+                if prequant_repo[quantization]
+            ]
+
+            for key, quantization, target_model, label in vllm_jobs:
+                console.print(f"[magenta]Benchmarking {label.strip()}...[/magenta]")
+                try:
+                    results[key] = vllm_bench(target_model, prompt, token, quantization=quantization)
+                except Exception as e:
+                    console.print(f"[yellow]Skipping {label.strip()}: {type(e).__name__}: {e}[/yellow]")
 
     # ── Results table ──────────────────────────────────────────────
     table = Table("Mode", mem_label, "Tokens/sec (TPS)", "Time to First Token (TTFT)", "Perplexity")
 
-    for key, label in [
-        ("hf_fp16",   "HF · FP16      "),
-        ("hf_int8",   "HF · INT8      "),
-        ("hf_int4",   "HF · INT4 (NF4)"),
-        ("vllm_fp16", "vLLM · FP16    "),
-    ]:
+    for key, _, label in ALL_RESULT_ROWS:
         if key not in results:
             continue
         m = results[key]
@@ -227,8 +304,14 @@ def inference(
 
     console.print(table)
 
+    ping("benchmark_completed", {
+        "backend": backend,
+        "hf_ran": run_hf,
+        "vllm_ran": run_vllm and "vllm_fp16" in results,
+    })
+
     # ── Recommendation ─────────────────────────────────────────────
-    has_hf_all = all(k in results for k in ("hf_fp16", "hf_int8", "hf_int4"))
+    has_hf_all = all(k in results for k in ("hf_fp16", "hf_int8", "hf_nf4"))
     api_key = os.environ.get("GROQ_API_KEY")
 
     if api_key and has_hf_all:

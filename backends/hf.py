@@ -8,20 +8,50 @@ from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 
+def _build_quant_config(quantization: str):
+    """Builds the transformers quantization_config for a given mode.
+
+    "awq"/"gptq" return None deliberately — those checkpoints declare their own
+    quantization_config in config.json, so passing one here would conflict with it.
+    """
+    if quantization in (None, "awq", "gptq"):
+        return None
+    if quantization == "int8":
+        return BitsAndBytesConfig(load_in_8bit=True)
+    if quantization == "nf4":
+        return BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4")
+    if quantization == "fp4":
+        return BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="fp4")
+    if quantization == "nf4_double":
+        return BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True
+        )
+    if quantization == "hqq":
+        from transformers import HqqConfig
+        return HqqConfig(nbits=4, group_size=64)
+    if quantization == "quanto_int8":
+        from transformers import QuantoConfig
+        return QuantoConfig(weights="int8")
+    if quantization == "quanto_int4":
+        from transformers import QuantoConfig
+        return QuantoConfig(weights="int4")
+    raise ValueError(f"Unknown quantization mode: {quantization!r}")
+
+
 def hf_bench(model: str, prompt: str, token: str, quantization: str = None) -> dict:
     """
-    quantization: None = native FP16, "int8", "int4"
+    quantization: None = native FP16, "int8", "nf4", "fp4", "nf4_double", "hqq",
+                  "quanto_int8", "quanto_int4" (all on-the-fly), or "awq" / "gptq"
+                  (require `model` to already be a pre-quantized checkpoint, e.g.
+                  TheBloke/Mistral-7B-v0.1-AWQ — install autoawq / auto-gptq respectively)
     """
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    bnb_config = None
-    if quantization == "int8":
-        bnb_config = BitsAndBytesConfig(load_in_8bit=True)
-    elif quantization == "int4":
-        bnb_config = BitsAndBytesConfig(load_in_4bit=True)
+    quant_config = _build_quant_config(quantization)
 
     model_hf = AutoModelForCausalLM.from_pretrained(
-        model, quantization_config=bnb_config, device_map="auto", token=token
+        model, quantization_config=quant_config, device_map="auto", token=token
     )
     tokenizer = AutoTokenizer.from_pretrained(model, token=token)
 
@@ -76,11 +106,9 @@ def hf_bench(model: str, prompt: str, token: str, quantization: str = None) -> d
         loss_out = model_hf(cuda_tokens, labels=cuda_tokens)
         perplexity = torch.exp(loss_out.loss).item()
 
-    del model_hf, loss_out, ref_inputs, cuda_tokens, tokenizer, full_text, gen_outputs, inputs
-    torch.cuda.synchronize()
+    del model_hf, loss_out, ref_inputs, cuda_tokens, tokenizer, full_text, gen_outputs
     torch.cuda.empty_cache()
     torch.cuda.ipc_collect()
-    gc.collect()
     gc.collect()
 
     return {"ttft": ttft, "mem": mem_mb, "tps": tps, "perplexity": perplexity}

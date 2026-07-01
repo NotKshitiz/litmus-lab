@@ -8,7 +8,9 @@ import torch
 
 def vllm_bench(model: str, prompt: str, token: str, quantization: str = None) -> dict:
     """
-    quantization: None = native FP16, "awq", "gptq", "fp8"
+    quantization: None = native FP16, "fp8" or "bitsandbytes" (on-the-fly on the base
+                  checkpoint), or "awq" / "gptq" (require `model` to already be a
+                  pre-quantized checkpoint, e.g. TheBloke/Mistral-7B-v0.1-AWQ)
 
     Requires: pip install vllm
     Note: AWQ/GPTQ require pre-quantized model checkpoints on HuggingFace
@@ -16,8 +18,8 @@ def vllm_bench(model: str, prompt: str, token: str, quantization: str = None) ->
     """
     try:
         from vllm import LLM, SamplingParams
-    except ImportError:
-        raise ImportError("vLLM is not installed. Run: pip install vllm")
+    except ImportError as e:
+        raise ImportError(f"vLLM import failed ({e}). If it's installed, this is likely a version/dependency conflict, not a missing package.") from e
 
     os.environ["HF_TOKEN"] = token or ""
 
@@ -33,9 +35,14 @@ def vllm_bench(model: str, prompt: str, token: str, quantization: str = None) ->
         total_mem = 0
         gpu_memory_utilization = 0.92
 
+    # bitsandbytes quantizes the base checkpoint on load; every other mode
+    # (including pre-quantized awq/gptq checkpoints) uses vLLM's default loader.
+    load_format = "bitsandbytes" if quantization == "bitsandbytes" else "auto"
+
     llm = LLM(
         model=model,
         quantization=quantization,
+        load_format=load_format,
         dtype="float16",
         trust_remote_code=True,
         gpu_memory_utilization=gpu_memory_utilization,
