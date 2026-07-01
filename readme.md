@@ -215,6 +215,52 @@ Same model coverage as HF. VRAM is generally higher than HF at the same precisio
 
 ---
 
+## Troubleshooting
+
+### vLLM fails to initialize on Blackwell GPUs (RTX 50-series)
+
+**Symptoms** — one or more of these during `--backend vllm` / `all`, often across every vLLM mode at once:
+```
+ImportError: vLLM import failed (libcudart.so.13: cannot open shared object file...)
+RuntimeError: ... cudaHostGetDevicePointer failed: CUDA driver version is insufficient for CUDA runtime version
+Failed to get device capability: SM 12.x requires CUDA >= 12.9.
+RuntimeError: FlashInfer requires GPUs with sm75 or higher
+RuntimeError: The NVIDIA driver on your system is too old (found version 12080)
+```
+
+**Root cause**: these are all symptoms of the same mismatch — Blackwell-generation GPUs (compute capability 12.x) need **CUDA ≥ 12.9 and driver ≥ 575.51** for vLLM's FlashInfer kernels. Which exact error you see depends on which model/quantization mode happens to hit the mismatch first.
+
+**Diagnose:**
+```bash
+nvidia-smi   # top-right "CUDA Version" is the max your *driver* supports
+python -c "import torch; print(torch.version.cuda, torch.cuda.is_available())"
+```
+If `nvidia-smi` reports less than 12.9, that's confirmed.
+
+**Fix, if you control the host** (your own machine, not a rented container):
+```bash
+sudo apt update && sudo apt install -y nvidia-driver-575   # or newer — check nvidia.com
+sudo reboot
+pip uninstall torch torchvision torchaudio vllm -y
+pip install torch --index-url https://download.pytorch.org/whl/cu129
+pip install vllm
+```
+
+**If you're on a rented cloud pod** (RunPod/Vast.ai/Lambda/etc.) — the driver belongs to the host, not your container, so nothing you `pip`/`apt install` inside it can change it. Options:
+- Look for a pod template/image explicitly advertising a newer driver or "Blackwell-ready"/CUDA 12.9 support
+- Ask the provider's support directly whether such nodes exist
+- Provision a fresh pod — driver versions vary node to node
+
+**Careful**: upgrading torch alone to a cu129 build *without* a matching driver makes things worse, not better — torch's own driver check then fails outright (`RuntimeError: The NVIDIA driver on your system is too old`), and `torch.cuda.is_available()` silently returns `False`, so litmus-lab falls back to CPU for *everything*, including the HF backend that was working fine before. If that happens, revert:
+```bash
+pip uninstall torch torchvision torchaudio -y
+pip install torch --index-url https://download.pytorch.org/whl/cu128
+```
+
+**In the meantime**: `--backend hf` is unaffected by any of this and works fine on Blackwell GPUs, since it never touches vLLM/FlashInfer.
+
+---
+
 ## What's being built 🚧
 
 | Feature | Status |
