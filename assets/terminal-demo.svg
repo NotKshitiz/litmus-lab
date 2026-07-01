@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+  <defs>
+    <clipPath id="winClip"><rect x="0" y="0" width="900" height="420" rx="14"/></clipPath>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="420" rx="14" fill="#0f0f12" stroke="#26262b" stroke-width="1.5"/>
+
+  <g clip-path="url(#winClip)">
+    <rect x="0" y="0" width="900" height="44" fill="#161619"/>
+    <circle cx="24" cy="22" r="6" fill="#ff5f57"/>
+    <circle cx="46" cy="22" r="6" fill="#febc2e"/>
+    <circle cx="68" cy="22" r="6" fill="#28c840"/>
+    <text x="100" y="27" font-size="13" fill="#6a6a72">litmus-lab — benchmark session</text>
+    <line x1="0" y1="44" x2="900" y2="44" stroke="#26262b" stroke-width="1"/>
+  </g>
+
+  <text x="24" y="78" font-size="15" fill="#d9645f">❯</text>
+  <text x="44" y="78" font-size="15" fill="#f3f3f4">litmus-lab --model Qwen/Qwen2.5-7B --prompt "Explain quantum gravity" --backend all</text>
+
+  <text x="24" y="112" font-size="13" fill="#9b9ba3">↳ benchmarking HF · FP16 / INT8 / NF4 · vLLM …</text>
+
+  <!-- table -->
+  <g font-size="13.5">
+    <text x="24" y="150" fill="#6a6a72">Mode</text>
+    <text x="230" y="150" fill="#6a6a72">VRAM (MB)</text>
+    <text x="370" y="150" fill="#6a6a72">TPS</text>
+    <text x="460" y="150" fill="#6a6a72">TTFT</text>
+    <text x="560" y="150" fill="#6a6a72">Perplexity</text>
+    <line x1="24" y1="162" x2="700" y2="162" stroke="#26262b" stroke-width="1"/>
+
+    <text x="24" y="190" fill="#d9645f">HF · FP16</text>
+    <text x="230" y="190" fill="#f3f3f4">7297.83</text>
+    <text x="370" y="190" fill="#f3f3f4">32.69</text>
+    <text x="460" y="190" fill="#f3f3f4">0.030s</text>
+    <text x="560" y="190" fill="#f3f3f4">5.64</text>
+
+    <text x="24" y="216" fill="#d9645f">HF · INT8</text>
+    <text x="230" y="216" fill="#f3f3f4">3846.47</text>
+    <text x="370" y="216" fill="#f3f3f4">14.26</text>
+    <text x="460" y="216" fill="#f3f3f4">0.083s</text>
+    <text x="560" y="216" fill="#f3f3f4">5.81</text>
+
+    <text x="24" y="242" fill="#d9645f">HF · NF4</text>
+    <text x="230" y="242" fill="#f3f3f4">2334.96</text>
+    <text x="370" y="242" fill="#f3f3f4">25.98</text>
+    <text x="460" y="242" fill="#f3f3f4">0.069s</text>
+    <text x="560" y="242" fill="#f3f3f4">7.34</text>
+
+    <text x="24" y="268" fill="#e88a85">vLLM · FP16</text>
+    <text x="230" y="268" fill="#f3f3f4">12687.31</text>
+    <text x="370" y="268" fill="#f3f3f4">111.68</text>
+    <text x="460" y="268" fill="#f3f3f4">0.448s</text>
+    <text x="560" y="268" fill="#f3f3f4">5.65</text>
+  </g>
+
+  <!-- recommendation card -->
+  <rect x="24" y="300" width="852" height="96" rx="10" fill="#d9645f" fill-opacity="0.08" stroke="#d9645f" stroke-opacity="0.35" stroke-width="1"/>
+  <rect x="24" y="300" width="4" height="96" rx="2" fill="#d9645f"/>
+  <text x="46" y="325" font-size="11" letter-spacing="2" fill="#e88a85">RECOMMENDATION</text>
+  <text x="46" y="350" font-size="14" fill="#f3f3f4">Deploy <tspan fill="#e88a85" font-weight="600">vLLM · FP16</tspan> — 3.4× faster than HF · PPL delta 0.01</text>
+  <text x="46" y="374" font-size="14" fill="#9b9ba3">Memory-constrained? <tspan fill="#e88a85" font-weight="600">HF · NF4</tspan> saves 4963 MB (PPL +1.70)</text>
+</svg>

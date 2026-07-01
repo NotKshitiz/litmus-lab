@@ -24,7 +24,7 @@ python_logging.getLogger("huggingface_hub").setLevel(python_logging.ERROR)
 logging.set_verbosity_error()
 disable_progress_bar()
 
-__version__ = "0.3.2"
+__version__ = "0.3.5"
 
 app = typer.Typer()
 console = Console()
@@ -228,6 +228,11 @@ def run(
     console.print(f"[bold]Model:[/bold] {model}  |  [bold]Device:[/bold] {device}  |  [bold]Backend:[/bold] {backend}\n")
 
     results = {}
+    failures = {}
+
+    def _short_reason(e: Exception) -> str:
+        msg = str(e).splitlines()[0][:70]
+        return f"{type(e).__name__}: {msg}" if msg else type(e).__name__
 
     prequant_repo = {"awq": awq_model, "gptq": gptq_model}
 
@@ -245,6 +250,7 @@ def run(
                 results[key] = hf_bench(target_model, prompt, token, quantization=quantization)
             except Exception as e:
                 console.print(f"[yellow]Skipping {label.strip()}: {type(e).__name__}: {e}[/yellow]")
+                failures[key] = _short_reason(e)
 
     if run_vllm:
         try:
@@ -286,21 +292,24 @@ def run(
                     results[key] = vllm_bench(target_model, prompt, token, quantization=quantization)
                 except Exception as e:
                     console.print(f"[yellow]Skipping {label.strip()}: {type(e).__name__}: {e}[/yellow]")
+                    failures[key] = _short_reason(e)
 
     # ── Results table ──────────────────────────────────────────────
-    table = Table("Mode", mem_label, "Tokens/sec (TPS)", "Time to First Token (TTFT)", "Perplexity")
+    table = Table("Mode", "Status", mem_label, "Tokens/sec (TPS)", "Time to First Token (TTFT)", "Perplexity")
 
     for key, _, label in ALL_RESULT_ROWS:
-        if key not in results:
-            continue
-        m = results[key]
-        table.add_row(
-            label,
-            f"{m['mem']:.2f}",
-            f"{m['tps']:.4f}",
-            f"{m['ttft']:.4f} sec",
-            f"{m['perplexity']:.2f}",
-        )
+        if key in results:
+            m = results[key]
+            table.add_row(
+                label,
+                "[green]ok[/green]",
+                f"{m['mem']:.2f}",
+                f"{m['tps']:.4f}",
+                f"{m['ttft']:.4f} sec",
+                f"{m['perplexity']:.2f}",
+            )
+        elif key in failures:
+            table.add_row(label, f"[red]{failures[key]}[/red]", "—", "—", "—", "—")
 
     console.print(table)
 

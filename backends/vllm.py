@@ -46,6 +46,11 @@ def vllm_bench(model: str, prompt: str, token: str, quantization: str = None) ->
         dtype="float16",
         trust_remote_code=True,
         gpu_memory_utilization=gpu_memory_utilization,
+        # Benchmarks only ever need a prompt + 50 generated tokens (or the 512-token
+        # perplexity chunk) — without this, vLLM sizes its KV cache pool for the
+        # model's full native context (e.g. 32768 for Mistral), which can exceed
+        # available VRAM on smaller GPUs long before the KV cache is ever used.
+        max_model_len=2048,
     )
 
     sampling_params = SamplingParams(

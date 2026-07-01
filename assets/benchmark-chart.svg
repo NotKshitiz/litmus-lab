@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <text x="0" y="24" font-size="13" font-weight="600" letter-spacing="1.5" fill="#9b9ba3">VRAM USAGE (MB) — LOWER IS MORE EFFICIENT</text>
+
+  <text x="0" y="62" font-size="14" fill="#f3f3f4">HF · FP16</text>
+  <rect x="140" y="46" width="403" height="26" rx="5" fill="#e88a85"/>
+  <text x="553" y="63" font-size="13" fill="#9b9ba3">7297.83</text>
+
+  <text x="0" y="112" font-size="14" fill="#f3f3f4">HF · INT8</text>
+  <rect x="140" y="96" width="212" height="26" rx="5" fill="#e88a85"/>
+  <text x="362" y="113" font-size="13" fill="#9b9ba3">3846.47</text>
+
+  <text x="0" y="162" font-size="14" fill="#f3f3f4">HF · NF4</text>
+  <rect x="140" y="146" width="129" height="26" rx="5" fill="#d9645f"/>
+  <text x="279" y="163" font-size="13" fill="#e88a85" font-weight="600">2334.96 · smallest footprint</text>
+
+  <text x="0" y="212" font-size="14" fill="#f3f3f4">vLLM · FP16</text>
+  <rect x="140" y="196" width="700" height="26" rx="5" fill="#6a6a72"/>
+  <text x="825" y="213" font-size="13" fill="#f3f3f4" text-anchor="end">12687.31</text>
+
+  <line x1="140" y1="240" x2="140" y2="255" stroke="#26262b" stroke-width="1"/>
+
+  <text x="0" y="290" font-size="13" font-weight="600" letter-spacing="1.5" fill="#9b9ba3">THROUGHPUT (TOKENS/SEC) — HIGHER IS FASTER</text>
+
+  <text x="0" y="326" font-size="14" fill="#f3f3f4">HF · FP16</text>
+  <rect x="140" y="310" width="147" height="20" rx="4" fill="#e88a85"/>
+  <text x="297" y="325" font-size="12" fill="#9b9ba3">32.7</text>
+
+  <text x="450" y="326" font-size="14" fill="#f3f3f4">vLLM · FP16</text>
+  <rect x="590" y="310" width="290" height="20" rx="4" fill="#d9645f"/>
+  <text x="870" y="325" font-size="12" fill="#f3f3f4" text-anchor="end" font-weight="600">111.7 · 3.4×</text>
+</svg>

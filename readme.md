@@ -1,36 +1,60 @@
 <div align="center">
 
-<h1>⚗️ litmus-lab</h1>
+<img src="assets/logo-lockup.svg" width="260" alt="litmus-lab" />
 
 <p>Benchmark your LLM across quantization formats and backends on your own GPU.<br/>Get one verdict — which precision, which backend, what it costs.</p>
 
 [![PyPI](https://img.shields.io/pypi/v/litmus-lab?color=e05c57&label=PyPI)](https://pypi.org/project/litmus-lab/)
+[![Downloads](https://static.pepy.tech/badge/litmus-lab?color=e05c57)](https://pepy.tech/project/litmus-lab)
 [![Python](https://img.shields.io/pypi/pyversions/litmus-lab?color=3776ab)](https://pypi.org/project/litmus-lab/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/NotKshitiz/litmus-lab?color=e05c57)](https://github.com/NotKshitiz/litmus-lab/commits)
 [![GitHub Stars](https://img.shields.io/github/stars/NotKshitiz/litmus-lab?style=flat&color=e05c57)](https://github.com/NotKshitiz/litmus-lab/stargazers)
 
 </div>
+
+<br/>
+
+<div align="center">
+<img src="assets/terminal-demo.svg" width="820" alt="litmus-lab example run and recommendation" />
+</div>
+
+<br/>
+
+<p align="center">
+<a href="#how-it-works">How it works</a> ·
+<a href="#installation">Installation</a> ·
+<a href="#quick-start">Quick start</a> ·
+<a href="#usage">Usage</a> ·
+<a href="#ai-recommendations">AI recommendations</a> ·
+<a href="#metrics-explained">Metrics</a> ·
+<a href="#supported-models">Supported models</a> ·
+<a href="#requirements">Requirements</a> ·
+<a href="#troubleshooting">Troubleshooting</a> ·
+<a href="#whats-being-built-">Roadmap</a>
+</p>
 
 ---
 
 ## What it does
 
-`litmus-lab` runs your model through HuggingFace (FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto INT8/INT4, plus AWQ/GPTQ against a pre-quantized checkpoint) and vLLM (FP16, BitsAndBytes, FP8, AWQ, GPTQ) in isolated passes — measuring VRAM, throughput, latency and perplexity on your actual hardware — then outputs a single deployment recommendation.
+`litmus-lab` runs your model through HuggingFace (FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto INT8/INT4, plus AWQ/GPTQ against a pre-quantized checkpoint) and vLLM (FP16, BitsAndBytes, FP8, AWQ, GPTQ) in isolated passes — measuring VRAM, throughput, latency and perplexity on your actual hardware — then outputs a single deployment recommendation, shown above.
 
-```
-┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━┓
-┃ Mode            ┃ VRAM (MB) ┃ TPS      ┃ TTFT     ┃ Perplexity ┃
-┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━┩
-│ HF · FP16       │ 7297.83   │ 32.69    │ 0.030s   │ 5.64       │
-│ HF · INT8       │ 3846.47   │ 14.26    │ 0.083s   │ 5.81       │
-│ HF · NF4        │ 2334.96   │ 25.98    │ 0.069s   │ 7.34       │
-│ vLLM · FP16     │ 12687.31  │ 111.68   │ 0.448s   │ 5.65       │
-└─────────────────┴───────────┴──────────┴──────────┴────────────┘
+## How it works
 
-  Recommendation  Deploy vLLM · FP16
-                  3.4× faster than HF · PPL delta 0.01
-                  Memory-constrained? HF · NF4 saves 4963 MB (PPL +1.70)
-```
+<div align="center">
+<img src="assets/architecture-diagram.svg" width="820" alt="litmus-lab pipeline: model and prompt into HF and vLLM backends, into measured metrics, into a recommendation engine, into a verdict" />
+</div>
+
+Every mode runs in its own isolated pass on your actual GPU — no synthetic benchmarks, no vendor-reported numbers. The recommendation engine then weighs the measured VRAM, throughput, and perplexity delta against deployment thresholds to output one verdict.
+
+### Why quantize at all?
+
+<div align="center">
+<img src="assets/benchmark-chart.svg" width="760" alt="Bar chart comparing VRAM usage and throughput across FP16, INT8, NF4, and vLLM FP16" />
+</div>
+
+Same model, same GPU, same prompt — NF4 reclaims 4963 MB of VRAM versus FP16 at a real but bounded perplexity cost, while vLLM trades extra VRAM for 3.4× the throughput. That tradeoff, measured on *your* hardware and *your* model, is the actual answer litmus-lab gives you.
 
 ---
 
@@ -47,9 +71,11 @@ pip install "litmus-lab[vllm]"
 pip install "litmus-lab[ai]"
 
 # + AWQ / GPTQ pre-quantized checkpoint support (HF + vLLM)
+# Note: gptqmodel builds from source and can fail depending on your CUDA toolchain —
+# kept separate from `all` on purpose so a failed build here never breaks the base CLI.
 pip install "litmus-lab[awq,gptq]"
 
-# Everything
+# vLLM + AI recommendations (guaranteed to install cleanly — no source builds)
 pip install "litmus-lab[all]"
 ```
 
@@ -90,7 +116,23 @@ litmus-lab \
 | `vllm` | vLLM · FP16, BitsAndBytes, FP8 — plus AWQ/GPTQ if `--awq-model`/`--gptq-model` are given |
 | `all` | Both of the above in sequence |
 
-Any mode that hits a missing optional dependency or an unsupported GPU (e.g. FP8 on pre-Hopper hardware) prints a yellow skip line and continues — it won't abort the whole run.
+Any mode that hits a missing optional dependency, an unsupported GPU (e.g. FP8 on pre-Hopper hardware), or doesn't fit in VRAM prints a yellow skip line and continues — it won't abort the whole run. Failed modes also show up as their own row in the results table (`Status` column) with a short reason, instead of silently disappearing.
+
+### vLLM configuration
+
+`litmus-lab` currently runs every vLLM mode with a fixed configuration — not yet exposed as CLI flags:
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `dtype` | `float16` | consistent precision across all vLLM modes |
+| `max_model_len` | `2048` | benchmarks only ever need a prompt + 50 generated tokens (or a 512-token perplexity chunk) — capping this avoids reserving KV cache for the model's full native context (e.g. 32768 for Mistral), which can exceed available VRAM on smaller GPUs long before the KV cache is ever used |
+| `gpu_memory_utilization` | computed per run: `min(0.92, (free_VRAM_before_load - 400MB) / total_VRAM)` | adapts to whatever's actually free on your GPU at that moment, leaving roughly an 8% safety margin |
+| `load_format` | `bitsandbytes` for the BitsAndBytes mode, `auto` otherwise | matches vLLM's on-the-fly quantization requirement |
+| `trust_remote_code` | `True` | needed for some community model architectures |
+
+If a mode's weights + KV cache genuinely can't fit in your VRAM even with this config (e.g. FP16 on a 7B model on a 16GB card, where weights alone can take ~85% of it), that's a real finding, not a bug — it shows up as a failed row in the results table rather than crashing the run, and tells you quantization isn't optional for that model on that GPU.
+
+🚧 **Planned**: flags to override these (`--max-model-len`, `--gpu-memory-utilization`, etc.) so you can tune vLLM's config to your own hardware instead of relying on the fixed defaults above.
 
 ### Examples
 
@@ -259,6 +301,18 @@ pip install torch --index-url https://download.pytorch.org/whl/cu128
 
 **In the meantime**: `--backend hf` is unaffected by any of this and works fine on Blackwell GPUs, since it never touches vLLM/FlashInfer.
 
+### vLLM: "No available memory for the cache blocks" / negative KV cache memory
+
+**Symptom:**
+```
+(EngineCore pid=...) INFO ... [gpu_worker.py:508] Available KV cache memory: -0.14 GiB
+ValueError: No available memory for the cache blocks. Try increasing `gpu_memory_utilization`...
+```
+
+**This usually isn't a bug** — it means the model's weights alone (plus vLLM's `torch.compile`/CUDA graph overhead) already consume nearly all the VRAM budget, leaving no room for a KV cache at all. It shows up most often running **FP16** on a 7B-class model on a 16GB GPU, where weights alone take ~13-14 GiB. Quantized modes (BitsAndBytes/FP8/AWQ/GPTQ) use roughly a quarter of that for weights and typically have plenty of headroom left over on the same card.
+
+That mode will show up as a failed row in the results table (see the `Status` column) with the short reason, rather than crashing the whole run. If FP16 fails while your quantized modes succeed, that's the actual answer: **quantization isn't optional for that model on that GPU.** See [vLLM configuration](#vllm-configuration) above for exactly what memory budget litmus-lab computes today, and note that per-run tuning flags for this are planned (see roadmap below).
+
 ---
 
 ## What's being built 🚧
@@ -267,6 +321,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu128
 |---------|--------|
 | GGUF / llama.cpp backend (CPU + Mac M-series) | 🔨 In progress |
 | Cost prediction (`--target-users`, `--gpu-cost`) | 🔨 In progress |
+| vLLM config flags (`--max-model-len`, `--gpu-memory-utilization`, etc.) | 📋 Planned |
 | Concurrency benchmarking (`--concurrency 1,4,8,16,32`) | 📋 Planned |
 | Multi-model comparison in one run | 📋 Planned |
 | JSON / HTML report export | 📋 Planned |
