@@ -5,7 +5,6 @@
 <p>Benchmark your LLM across quantization formats and backends on your own GPU.<br/>Get one verdict — which precision, which backend, what it costs.</p>
 
 [![PyPI](https://img.shields.io/pypi/v/litmus-lab?color=e05c57&label=PyPI)](https://pypi.org/project/litmus-lab/)
-[![Downloads](https://static.pepy.tech/badge/litmus-lab?color=e05c57)](https://pepy.tech/project/litmus-lab)
 [![Python](https://img.shields.io/pypi/pyversions/litmus-lab?color=3776ab)](https://pypi.org/project/litmus-lab/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/NotKshitiz/litmus-lab?color=e05c57)](https://github.com/NotKshitiz/litmus-lab/commits)
