@@ -14,13 +14,13 @@ function Icon({ d }: { d: ReactNode }) {
 
 const flagship = {
   title: "Multi-backend benchmarking",
-  body: "HuggingFace (FP16 · INT8 · INT4) and vLLM are live now. GGUF / llama.cpp support is actively being built — so CPU and Mac users can benchmark too.",
+  body: "HuggingFace (FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto) and vLLM (FP16, BitsAndBytes, FP8) are live now, plus AWQ/GPTQ against a pre-quantized checkpoint on both backends. GGUF / llama.cpp support is actively being built — so CPU and Mac users can benchmark too.",
   icon: <Icon d={<path d="M4 19V9M10 19V5M16 19v-7M22 19H2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />} />,
 };
 
 const bars = [
   { label: "HF FP16",   val: "32.7 TPS",   w: "29%",  live: true },
-  { label: "HF INT4",   val: "26.0 TPS",   w: "23%",  live: true },
+  { label: "HF NF4",    val: "26.0 TPS",   w: "23%",  live: true },
   { label: "vLLM FP16", val: "111.7 TPS",  w: "100%", live: true, highlight: true },
   { label: "GGUF",      val: "coming soon", w: "0%",   live: false },
 ];

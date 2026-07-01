@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="48" viewBox="0 0 240 48" fill="none">
+  <rect width="48" height="48" rx="12" fill="#0a0a0b"/>
+  <svg x="12" y="12" width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <line x1="12" y1="12" x2="21" y2="12" stroke="#d9645f" stroke-width="2.3" stroke-linecap="round"/>
+    <line x1="12" y1="12" x2="15" y2="17.2" stroke="#d9645f" stroke-width="2.3" stroke-linecap="round"/>
+    <line x1="12" y1="12" x2="7.5" y2="19.79" stroke="#d9645f" stroke-width="2.3" stroke-linecap="round"/>
+    <line x1="12" y1="12" x2="6" y2="12" stroke="#d9645f" stroke-width="2.3" stroke-linecap="round"/>
+    <line x1="12" y1="12" x2="7.5" y2="4.21" stroke="#d9645f" stroke-width="2.3" stroke-linecap="round"/>
+    <line x1="12" y1="12" x2="15" y2="6.8" stroke="#d9645f" stroke-width="2.3" stroke-linecap="round"/>
+  </svg>
+  <text x="64" y="32" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="600" letter-spacing="-0.5" fill="#f3f3f4">litmus<tspan fill="#d9645f">-</tspan>lab</text>
+</svg>

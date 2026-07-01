@@ -1,4 +1,5 @@
 import Backdrop from "@/components/Backdrop";
+import LichenGrowth from "@/components/LichenGrowth";
 import ScrollProgress from "@/components/ScrollProgress";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
@@ -15,6 +16,7 @@ export default function Home() {
   return (
     <main className="relative">
       <Backdrop />
+      <LichenGrowth />
       <ScrollProgress />
       <Nav />
       <Hero />

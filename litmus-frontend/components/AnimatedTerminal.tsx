@@ -18,7 +18,7 @@ type Row = {
 const ROWS: Row[] = [
   { name: "HF · FP16",  vram: "7297.83",  tps: "32.69",  ttft: "0.0300s", ppl: "5.64" },
   { name: "HF · INT8",  vram: "3846.47",  tps: "14.26",  ttft: "0.0828s", ppl: "5.81" },
-  { name: "HF · INT4",  vram: "2334.96",  tps: "25.98",  ttft: "0.0686s", ppl: "7.34", best: "vram" },
+  { name: "HF · NF4",   vram: "2334.96",  tps: "25.98",  ttft: "0.0686s", ppl: "7.34", best: "vram" },
   { name: "vLLM · FP16", vram: "12687.31", tps: "111.68", ttft: "0.4477s", ppl: "5.65", best: "tps" },
 ];
 
@@ -73,7 +73,7 @@ export default function AnimatedTerminal() {
               className="mt-4 space-y-1 text-bone-muted"
             >
               <p>↳ loading model on <span className="text-coral">cuda</span> …</p>
-              <p>↳ benchmarking HF · FP16 / INT8 / INT4 · vLLM <span className="animate-blink">▍</span></p>
+              <p>↳ benchmarking HF · FP16 / INT8 / NF4 / more · vLLM <span className="animate-blink">▍</span></p>
             </motion.div>
           )}
         </AnimatePresence>

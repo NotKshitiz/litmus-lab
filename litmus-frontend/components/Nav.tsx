@@ -11,17 +11,15 @@ const links = [
   { label: "How it works", href: "#how" },
 ];
 
-function Flask() {
+function Sunburst() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M9 4h6M10 4v6L6 16a2 2 0 0 0 1.8 3h8.4A2 2 0 0 0 18 16l-4-6V4"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="15" r="1.3" fill="currentColor" />
+      <line x1="12" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="15" y2="17.2" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="7.5" y2="19.79" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="6" y2="12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="7.5" y2="4.21" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="15" y2="6.8" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
     </svg>
   );
 }
@@ -47,7 +45,7 @@ export default function Nav() {
         <div className="glass flex w-full max-w-3xl items-center justify-between rounded-full py-2 pl-2 pr-2 sm:pl-4">
           <a href="#top" className="group flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/15 text-coral transition-colors group-hover:bg-coral/25">
-              <Flask />
+              <Sunburst />
             </span>
             <span className="text-[15px] font-semibold tracking-tight">
               litmus<span className="text-coral">-</span>lab
@@ -119,7 +117,7 @@ export default function Nav() {
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                 <span className="flex items-center gap-2.5">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/15 text-coral">
-                    <Flask />
+                    <Sunburst />
                   </span>
                   <span className="text-[15px] font-semibold tracking-tight">
                     litmus<span className="text-coral">-</span>lab

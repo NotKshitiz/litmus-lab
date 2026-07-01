@@ -5,10 +5,10 @@ import Reveal from "./Reveal";
 import CountUp from "./CountUp";
 
 const metrics = [
-  { label: "VRAM saved", sub: "FP16 → INT4 reclaimed", to: 4963, decimals: 0, suffix: " MB", note: "same model, same GPU", dir: "lower" },
+  { label: "VRAM saved", sub: "FP16 → NF4 reclaimed", to: 4963, decimals: 0, suffix: " MB", note: "same model, same GPU", dir: "lower" },
   { label: "Tokens / sec", sub: "vLLM peak throughput", to: 111.68, decimals: 2, suffix: "", note: "3.4× over HF FP16", dir: "higher" },
   { label: "TTFT", sub: "Time to first token (HF)", to: 0.030, decimals: 3, suffix: "s", note: "lower is better", dir: "lower" },
-  { label: "Perplexity", sub: "Quality degradation", to: 1.70, decimals: 2, suffix: " Δ", prefix: "+", note: "FP16 → INT4 delta", dir: "lower" },
+  { label: "Perplexity", sub: "Quality degradation", to: 1.70, decimals: 2, suffix: " Δ", prefix: "+", note: "FP16 → NF4 delta", dir: "lower" },
 ];
 
 function Pill({ dir }: { dir: string }) {

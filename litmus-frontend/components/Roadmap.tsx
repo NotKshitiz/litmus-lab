@@ -13,7 +13,7 @@ const stages = [
     tagline: "Free. Runs on your GPU. No signup.",
     steps: [
       "pip install litmus-lab on any NVIDIA GPU",
-      "Run --backend all — benchmarks HF (FP16/INT8/INT4) and vLLM in one shot",
+      "Run --backend all — benchmarks HF (FP16, INT8, NF4, FP4, HQQ, Quanto) and vLLM (FP16, BitsAndBytes, FP8) in one shot, plus AWQ/GPTQ on both",
       "Get a single verdict: which backend, which precision, and why",
     ],
   },
