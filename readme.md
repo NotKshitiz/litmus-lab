@@ -326,7 +326,7 @@ That mode will show up as a failed row in the results table (see the `Status` co
 | JSON / HTML report export | 📋 Planned |
 | Multi-GPU / tensor parallel benchmarking | 📋 Planned |
 
-> Want to shape the roadmap? [Open an issue](https://github.com/NotKshitiz/litmus-lab/issues) or join the [waitlist](https://litmuslab.io) for the web platform.
+> Want to shape the roadmap? [Open an issue](https://github.com/NotKshitiz/litmus-lab/issues) or join the [waitlist](https://litmus-lab-2ku.pages.dev/) for the web platform.
 
 ---
 
