@@ -6,7 +6,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/litmus-lab?color=e05c57&label=PyPI)](https://pypi.org/project/litmus-lab/)
 [![Python](https://img.shields.io/pypi/pyversions/litmus-lab?color=3776ab)](https://pypi.org/project/litmus-lab/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Last Commit](https://img.shields.io/github/last-commit/NotKshitiz/litmus-lab?color=e05c57)](https://github.com/NotKshitiz/litmus-lab/commits)
 [![GitHub Stars](https://img.shields.io/github/stars/NotKshitiz/litmus-lab?style=flat&color=e05c57)](https://github.com/NotKshitiz/litmus-lab/stargazers)
 
@@ -332,4 +332,4 @@ That mode will show up as a failed row in the results table (see the `Status` co
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE)

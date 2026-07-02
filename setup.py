@@ -9,6 +9,10 @@ setup(
     description="A CLI benchmarking framework for LLM inference across FP16/INT8/INT4/HQQ/Quanto/AWQ/GPTQ quantization",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="Apache-2.0",
+    classifiers=[
+        "License :: OSI Approved :: Apache Software License",
+    ],
     py_modules=["main"],
     packages=find_packages(exclude=["venv*", "dist*", "build*", "*.egg-info*"]),
     include_package_data=True,
