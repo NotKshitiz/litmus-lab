@@ -64,8 +64,8 @@ export default function Hero() {
           transition={{ duration: 0.75, delay: 0.14, ease }}
           className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-bone-muted sm:text-xl"
         >
-          Benchmark HF and vLLM across FP16 down to 4-bit — NF4, FP4, HQQ, Quanto, AWQ, GPTQ — on your own GPU.
-          Get one verdict — which backend, which precision, what it costs.
+          Benchmark HF and vLLM across FP16 down to 4-bit, NF4, FP4, HQQ, Quanto, AWQ, GPTQ, on your own GPU.
+          Get one verdict, which backend, which precision, what it costs.
         </motion.p>
 
         {/* CTAs */}

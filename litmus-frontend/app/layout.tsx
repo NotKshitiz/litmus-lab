@@ -16,9 +16,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "litmus-lab — Run your model. Know what to ship.",
+  title: "litmus-lab, Run your model. Know what to ship.",
   description:
-    "Benchmark HF and vLLM across FP16 down to 4-bit — NF4, FP4, HQQ, Quanto, AWQ, GPTQ — on your own GPU. One command. One verdict — which backend, which precision, what it costs at scale.",
+    "Benchmark HF and vLLM across FP16 down to 4-bit, NF4, FP4, HQQ, Quanto, AWQ, GPTQ, on your own GPU. One command. One verdict, which backend, which precision, what it costs at scale.",
   keywords: [
     "LLM quantization",
     "NF4",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     "tokens per second",
   ],
   openGraph: {
-    title: "litmus-lab — Quantize with conviction",
+    title: "litmus-lab, Quantize with conviction",
     description:
       "Benchmark FP16 down to 4-bit quantization and vLLM on your own GPU. Get a deterministic, offline deployment verdict.",
     type: "website",

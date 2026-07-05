@@ -63,7 +63,7 @@ export default function Waitlist() {
         </Reveal>
         <Reveal delay={0.1}>
           <p className="relative mx-auto mt-6 max-w-xl text-lg text-bone-muted">
-            litmus-lab is available today — install it, run a benchmark, get a verdict.
+            litmus-lab is available today, install it, run a benchmark, get a verdict.
             The waitlist is for early access to the web platform: benchmark history, team dashboards,
             new-model alerts, and cost prediction at scale.
           </p>
@@ -76,7 +76,7 @@ export default function Waitlist() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-coral">
                 <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              CLI — free forever
+              CLI, free forever
             </span>
             <span className="inline-flex items-center gap-2 rounded-full border border-coral/20 bg-coral/5 px-4 py-2 text-sm text-bone">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-coral">

@@ -1,16 +1,16 @@
-# litmus-lab — frontend
+# litmus-lab, frontend
 
 Landing page + waitlist for **litmus-lab**, the local CLI profiler that benchmarks LLMs across
 FP16 · INT8 · INT4 and recommends the best precision to deploy.
 
 Built with **Next.js 14 (App Router)**, **Tailwind CSS**, and **Framer Motion**. Theme: black
-background, crimson accent. Statically exported — ready for **Cloudflare Pages**.
+background, crimson accent. Statically exported, ready for **Cloudflare Pages**.
 
 ## Stack
 
-- `next` 14 — static export (`output: "export"`)
-- `tailwindcss` 3 — custom `ink` / `coral` / `bone` palette + glass utilities in `tailwind.config.ts`
-- `framer-motion` — scroll reveals, animated terminal, count-ups, cursor glow, marquee
+- `next` 14, static export (`output: "export"`)
+- `tailwindcss` 3, custom `ink` / `coral` / `bone` palette + glass utilities in `tailwind.config.ts`
+- `framer-motion`, scroll reveals, animated terminal, count-ups, cursor glow, marquee
 
 ## Local development
 
@@ -29,7 +29,7 @@ npm run build    # emits a static site into ./out
 
 This app exports to plain static HTML, so deployment is trivial.
 
-**Option A — Dashboard (Git):**
+**Option A, Dashboard (Git):**
 
 1. Push this folder to a Git repo and connect it in the Cloudflare Pages dashboard.
 2. Build settings:
@@ -37,7 +37,7 @@ This app exports to plain static HTML, so deployment is trivial.
    - **Build output directory:** `out`
 3. Deploy.
 
-**Option B — Wrangler (direct upload):**
+**Option B, Wrangler (direct upload):**
 
 ```bash
 npm run build

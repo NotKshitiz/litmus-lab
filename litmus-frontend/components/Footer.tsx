@@ -6,14 +6,12 @@ export default function Footer() {
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/15 text-coral">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M9 4h6M10 4v6L6 16a2 2 0 0 0 1.8 3h8.4A2 2 0 0 0 18 16l-4-6V4"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="15" r="1.3" fill="currentColor" />
+                <line x1="12" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                <line x1="12" y1="12" x2="15" y2="17.2" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                <line x1="12" y1="12" x2="7.5" y2="19.79" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                <line x1="12" y1="12" x2="6" y2="12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                <line x1="12" y1="12" x2="7.5" y2="4.21" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                <line x1="12" y1="12" x2="15" y2="6.8" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
               </svg>
             </span>
             <span className="text-sm font-semibold">
@@ -32,7 +30,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-white/5 py-5 text-center text-xs text-bone-faint">
-        © {new Date().getFullYear()} litmus-lab — quantize with conviction.
+        © {new Date().getFullYear()} litmus-lab, quantize with conviction.
       </div>
     </footer>
   );

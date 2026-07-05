@@ -14,7 +14,7 @@ function Icon({ d }: { d: ReactNode }) {
 
 const flagship = {
   title: "Multi-backend benchmarking",
-  body: "HuggingFace (FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto) and vLLM (FP16, BitsAndBytes, FP8) are live now, plus AWQ/GPTQ against a pre-quantized checkpoint on both backends. GGUF / llama.cpp support is actively being built — so CPU and Mac users can benchmark too.",
+  body: "HuggingFace (FP16, INT8, NF4, FP4, NF4+double-quant, HQQ, Quanto) and vLLM (FP16, BitsAndBytes, FP8) are live now, plus AWQ/GPTQ against a pre-quantized checkpoint on both backends. GGUF / llama.cpp support is actively being built, so CPU and Mac users can benchmark too.",
   icon: <Icon d={<path d="M4 19V9M10 19V5M16 19v-7M22 19H2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />} />,
 };
 
@@ -28,7 +28,7 @@ const bars = [
 const features = [
   {
     title: "Deployment verdict engine",
-    body: "A deterministic engine weighs your measured VRAM, throughput and perplexity delta against deployment thresholds — and outputs one verdict. No prompts. No hallucinations. Just your numbers.",
+    body: "A deterministic engine weighs your measured VRAM, throughput and perplexity delta against deployment thresholds, and outputs one verdict. No prompts. No hallucinations. Just your numbers.",
     icon: (
       <Icon
         d={
@@ -42,7 +42,7 @@ const features = [
   },
   {
     title: "VRAM isolation & cleanup",
-    body: "Every pass runs in an isolated worker with aggressive CUDA cache flushing, GC and IPC clearing — so memory leaks never corrupt your VRAM readings.",
+    body: "Every pass runs in an isolated worker with aggressive CUDA cache flushing, GC and IPC clearing, so memory leaks never corrupt your VRAM readings.",
     icon: (
       <Icon
         d={
@@ -55,7 +55,7 @@ const features = [
     ),
   },
   {
-    title: "Cost prediction — in progress",
+    title: "Cost prediction, in progress",
     body: "Pass --target-users and --gpu-cost and litmus-lab will project token cost per request at your concurrency. Shipping soon.",
     icon: (
       <Icon
@@ -69,7 +69,7 @@ const features = [
   },
   {
     title: "Beautiful terminal dashboard",
-    body: "Every benchmark renders as a clean, rich-formatted table right in your CLI — readable at a glance, copy-paste ready for a report.",
+    body: "Every benchmark renders as a clean, rich-formatted table right in your CLI, readable at a glance, copy-paste ready for a report.",
     icon: (
       <Icon
         d={

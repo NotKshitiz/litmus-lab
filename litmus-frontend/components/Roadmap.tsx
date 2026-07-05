@@ -13,7 +13,7 @@ const stages = [
     tagline: "Free. Runs on your GPU. No signup.",
     steps: [
       "pip install litmus-lab on any NVIDIA GPU",
-      "Run --backend all — benchmarks HF (FP16, INT8, NF4, FP4, HQQ, Quanto) and vLLM (FP16, BitsAndBytes, FP8) in one shot, plus AWQ/GPTQ on both",
+      "Run --backend all, benchmarks HF (FP16, INT8, NF4, FP4, HQQ, Quanto) and vLLM (FP16, BitsAndBytes, FP8) in one shot, plus AWQ/GPTQ on both",
       "Get a single verdict: which backend, which precision, and why",
     ],
   },
@@ -38,7 +38,7 @@ const stages = [
     steps: [
       "A lightweight agent runs next to your vLLM in production",
       "Streams live GPU utilization, request concurrency, and cost per request",
-      "Surfaces the exact format change to cut your bill — before your cloud invoice does",
+      "Surfaces the exact format change to cut your bill, before your cloud invoice does",
     ],
   },
 ];
@@ -144,7 +144,7 @@ export default function Roadmap() {
                 <span className="text-coral">58% of the cost.</span>
               </p>
               <p className="mt-3 text-bone-muted">
-                Re-benchmark it on your own hardware before you switch — one click, no guesswork.
+                Re-benchmark it on your own hardware before you switch, one click, no guesswork.
               </p>
             </div>
 

@@ -50,7 +50,7 @@ export default function AnimatedTerminal() {
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
         <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
         <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-        <span className="ml-3 font-mono text-xs text-bone-faint">litmus-lab — benchmark session</span>
+        <span className="ml-3 font-mono text-xs text-bone-faint">litmus-lab, benchmark session</span>
       </div>
 
       <div className="min-h-[380px] p-5 font-mono text-[13px] leading-relaxed sm:text-sm">
@@ -127,7 +127,7 @@ export default function AnimatedTerminal() {
             >
               <p className="text-xs uppercase tracking-[0.2em] text-coral">Recommendation</p>
               <p className="mt-2 text-bone">
-                Deploy <span className="font-semibold text-coral-bright">vLLM · FP16</span> — 3.4× faster than HF at identical quality{" "}
+                Deploy <span className="font-semibold text-coral-bright">vLLM · FP16</span>, 3.4× faster than HF at identical quality{" "}
                 <span className="text-bone-muted">(PPL delta 0.01)</span>. For memory-constrained setups,{" "}
                 <span className="font-semibold text-coral-bright">HF · INT4</span> saves 4963 MB with acceptable quality loss.
               </p>

@@ -7,7 +7,7 @@ const failures = [
   { k: "become slower", d: "Lower precision can tank throughput instead of helping it." },
   { k: "lose coherence", d: "Weights scramble and generations quietly fall apart." },
   { k: "spike TTFT", d: "Latency to first token balloons under some kernels." },
-  { k: "pick the wrong backend", d: "vLLM can be 3× faster than HF — or crash your GPU. You won't know until you measure." },
+  { k: "pick the wrong backend", d: "vLLM can be 3× faster than HF, or crash your GPU. You won't know until you measure." },
   { k: "overspend on inference", d: "Running FP16 on HF when vLLM INT4 would do is money left on the table every request." },
 ];
 
@@ -27,7 +27,7 @@ export default function Problem() {
       </Reveal>
       <Reveal delay={0.1}>
         <p className="mt-6 max-w-2xl text-lg text-bone-muted">
-          Memory reduction alone doesn&apos;t determine deployment quality — and neither does picking
+          Memory reduction alone doesn&apos;t determine deployment quality, and neither does picking
           HF or vLLM at random. The same model on the wrong backend or wrong precision can quietly:
         </p>
       </Reveal>
@@ -52,7 +52,7 @@ export default function Problem() {
       <Reveal delay={0.1}>
         <p className="mx-auto mt-12 max-w-2xl text-center text-lg text-bone">
           litmus-lab exists to <span className="text-coral">mathematically</span> decide which backend,
-          which precision, and what it costs — measured on{" "}
+          which precision, and what it costs, measured on{" "}
           <span className="underline decoration-coral/50 underline-offset-4">your</span> hardware, not someone else&apos;s.
         </p>
       </Reveal>
